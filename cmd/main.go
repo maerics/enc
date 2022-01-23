@@ -12,7 +12,7 @@ import (
 // enc code {hex,base32,base58,base64} [-D]
 // enc crypt {-aes,-ed25519,-rsa} [-D] --key=x
 // enc dgst -{md5,sha1,sha256,sha384,sha512}
-// enc hash [-base64,-hex*,-sri] [--json]
+// enc hash [-base64,-hex*] [-sri] [--json]
 // enc pass {bcrypt,scrypt}
 var rootCmd = &cobra.Command{
 	Use:   "enc",
@@ -35,6 +35,7 @@ func main() {
 			Short: fmt.Sprintf("Encode data from stdin into %v", name),
 			Run:   Encode(name, globalOpts, opts, flagOpts)}
 		cmd.Flags().BoolVarP(&opts.Decode, "decode", "D", false, "Decode input")
+		cmd.Flags().BoolVarP(&opts.FormatJSON, "json", "j", false, "Format structured output as JSON")
 		if name == "base58" {
 			cmd.Flags().StringVarP(&flagOpts.CheckVersionStr,
 				"check", "", "", "Check version byte for encoding")
@@ -44,8 +45,10 @@ func main() {
 
 	// Global/main flags.
 	rootCmd.Flags().BoolVarP(&globalOpts.Decode, "decode", "D", false, "Decode input")
+	rootCmd.Flags().BoolVarP(&globalOpts.FormatJSON, "json", "j", false, "Format structured output as JSON")
 
 	// Run main.
+	log.SetFlags(0)
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatalf("FATAL: %v", err)
 	}
@@ -54,12 +57,12 @@ func main() {
 
 func Encode(target string, globalOpts, opts *enc.Options, flagOpts *FlagOptions) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
-		// TODO: merge global options into options?
+		mergeOptions(opts, globalOpts)
 
 		if target == "base58" && flagOpts != nil && flagOpts.CheckVersionStr != "" {
 			v, err := enc.ParseBase58CheckVersionByteInput(flagOpts.CheckVersionStr)
 			if err != nil {
-				log.Fatalf("FATAL: invalid check version byte: %v", err)
+				log.Fatalf("FATAL: invalid check version byte [0-255]: %v", err)
 			}
 			opts.CheckVersion = &v
 		}
@@ -67,5 +70,18 @@ func Encode(target string, globalOpts, opts *enc.Options, flagOpts *FlagOptions)
 		if _, err := enc.Encode(target, *opts, os.Stdin, os.Stdout); err != nil {
 			log.Fatalf("FATAL: %v", err)
 		}
+	}
+}
+
+func mergeOptions(dst, src *enc.Options) {
+	if dst == nil || src == nil {
+		return
+	}
+
+	if src.Decode {
+		dst.Decode = true
+	}
+	if src.FormatJSON {
+		dst.FormatJSON = true
 	}
 }

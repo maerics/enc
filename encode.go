@@ -4,6 +4,7 @@ import (
 	"encoding/base32"
 	"encoding/base64"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -59,8 +60,15 @@ func base58Codec(opts Options, in io.Reader, out io.WriteCloser) (int, error) {
 		// First try check decoding.
 		result, version, err := base58.CheckDecode(string(data))
 		if err == nil {
-			fmt.Fprintf(os.Stderr, "Version Byte: 0x%02x\n", version)
-			return out.Write(result)
+			if opts.FormatJSON {
+				return out.Write(append(mustJSON(struct {
+					Version byte   `json:"version"`
+					Data    string `json:"data"`
+				}{version, string(result)}), '\n'))
+			} else {
+				fmt.Fprintf(os.Stderr, "Version Byte: 0x%02x\n", version)
+				return out.Write(result)
+			}
 		}
 
 		// Then try plain decoding.
@@ -85,11 +93,14 @@ func ParseBase58CheckVersionByteInput(input string) (byte, error) {
 		base, s = 16, input[2:]
 	}
 	n, err := strconv.ParseUint(s, base, 8)
-	if err == strconv.ErrRange {
-		return 0, fmt.Errorf("byte out of range %q", input)
+	if errors.Is(err, strconv.ErrRange) {
+		return 0, fmt.Errorf("out of range %q", input)
 	}
-	if err == strconv.ErrSyntax {
-		return 0, fmt.Errorf("invalid byte %q", input)
+	if errors.Is(err, strconv.ErrSyntax) {
+		return 0, fmt.Errorf("syntax error %q", input)
+	}
+	if err != nil {
+		return 0, err
 	}
 	return byte(n), nil
 }

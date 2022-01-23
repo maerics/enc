@@ -19,21 +19,31 @@ var rootCmd = &cobra.Command{
 	Short: "Encode, encrypt, and digest data on stdin.",
 }
 
-var decode bool
+type FlagOptions struct {
+	CheckVersionStr string
+}
 
 func main() {
+	globalOpts := &enc.Options{}
+	flagOpts := &FlagOptions{}
+	opts := &enc.Options{}
+
 	// Encoding commands.
-	for _, enc := range []string{"hex", "base32", "base58", "base64"} {
+	for _, name := range []string{"hex", "base32", "base58", "base64"} {
 		cmd := &cobra.Command{
-			Use:   enc,
-			Short: fmt.Sprintf("Encode data from stdin into %v", enc),
-			Run:   Encode(enc)}
-		cmd.Flags().BoolVarP(&decode, "decode", "D", false, "Decode input")
+			Use:   name,
+			Short: fmt.Sprintf("Encode data from stdin into %v", name),
+			Run:   Encode(name, globalOpts, opts, flagOpts)}
+		cmd.Flags().BoolVarP(&opts.Decode, "decode", "D", false, "Decode input")
+		if name == "base58" {
+			cmd.Flags().StringVarP(&flagOpts.CheckVersionStr,
+				"check", "", "", "Check version byte for encoding")
+		}
 		rootCmd.AddCommand(cmd)
 	}
 
 	// Global/main flags.
-	rootCmd.Flags().BoolVarP(&decode, "decode", "D", false, "Decode input")
+	rootCmd.Flags().BoolVarP(&globalOpts.Decode, "decode", "D", false, "Decode input")
 
 	// Run main.
 	if err := rootCmd.Execute(); err != nil {
@@ -42,11 +52,19 @@ func main() {
 	os.Exit(0)
 }
 
-func Encode(target string) func(cmd *cobra.Command, args []string) {
+func Encode(target string, globalOpts, opts *enc.Options, flagOpts *FlagOptions) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
-		out := os.Stdout
-		_, err := enc.Encode(target, decode, os.Stdin, out)
-		if err != nil {
+		// TODO: merge global options into options?
+
+		if target == "base58" && flagOpts != nil && flagOpts.CheckVersionStr != "" {
+			v, err := enc.ParseBase58CheckVersionByteInput(flagOpts.CheckVersionStr)
+			if err != nil {
+				log.Fatalf("FATAL: invalid check version byte: %v", err)
+			}
+			opts.CheckVersion = &v
+		}
+
+		if _, err := enc.Encode(target, *opts, os.Stdin, os.Stdout); err != nil {
 			log.Fatalf("FATAL: %v", err)
 		}
 	}

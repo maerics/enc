@@ -9,10 +9,10 @@ import (
 )
 
 type Options struct {
-	Decode bool
+	Decode           bool
+	IgnoreWhitespace bool
 
-	CheckVersion *uint8
-
+	CheckVersion     *uint8
 	CheckVersionFlag string
 }
 
@@ -25,7 +25,11 @@ func main() {
 		CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
 	}
 	rootCmd.Flags().BoolVarP(&options.Decode,
-		"decode", "D", options.Decode, "decode input from target encoding to binary")
+		"decode", "D", options.Decode,
+		"decode input from target encoding to binary")
+	rootCmd.Flags().BoolVarP(&options.IgnoreWhitespace,
+		"ignore-whitespace", "w", options.IgnoreWhitespace,
+		"ignore ASCII whitespace characters when decoding")
 
 	addStreamingCodecs(rootCmd, options)
 	addBufferedCodecs(rootCmd, options)

@@ -39,6 +39,9 @@ func addBufferedCodecs(rootCmd *cobra.Command, options *Options) {
 		codec.SetFlags(cmd.Flags(), options)
 		cmd.Flags().BoolVarP(&options.Decode, "decode", "D", options.Decode,
 			`decode input from "base58" to binary`)
+		cmd.Flags().BoolVarP(&options.IgnoreWhitespace,
+			"ignore-whitespace", "w", options.IgnoreWhitespace,
+			"ignore ASCII whitespace characters when decoding")
 		rootCmd.AddCommand(cmd)
 	}
 }

@@ -14,19 +14,19 @@ import (
 
 type StreamingCodec struct {
 	Name    string
-	Decoder func(io.Reader) io.Reader      // TODO: options
-	Encoder func(io.Writer) io.WriteCloser // TODO: options
+	Decoder func(io.Reader, *Options) io.Reader // TODO: options
+	Encoder func(io.Writer) io.WriteCloser      // TODO: options
 }
 
 var streamingCodecs = []StreamingCodec{
 	{"base32",
-		func(r io.Reader) io.Reader { return base32.NewDecoder(base32.StdEncoding, r) },
+		func(r io.Reader, o *Options) io.Reader { return base32.NewDecoder(base32.StdEncoding, wsiro(r, o)) },
 		func(w io.Writer) io.WriteCloser { return base32.NewEncoder(base32.StdEncoding, w) }},
 	{"base64",
-		func(r io.Reader) io.Reader { return base64.NewDecoder(base64.StdEncoding, r) },
+		func(r io.Reader, o *Options) io.Reader { return base64.NewDecoder(base64.StdEncoding, wsiro(r, o)) },
 		func(w io.Writer) io.WriteCloser { return base64.NewEncoder(base64.StdEncoding, w) }},
 	{"hex",
-		func(r io.Reader) io.Reader { return hex.NewDecoder(r) },
+		func(r io.Reader, o *Options) io.Reader { return hex.NewDecoder(wsiro(r, o)) },
 		func(w io.Writer) io.WriteCloser { return wnc(hex.NewEncoder(w)) }},
 }
 
@@ -39,14 +39,17 @@ func addStreamingCodecs(rootCmd *cobra.Command, options *Options) {
 		}
 		cmd.Flags().BoolVarP(&options.Decode, "decode", "D", options.Decode,
 			fmt.Sprintf("decode input from %q to binary", codec.Name))
+		cmd.Flags().BoolVarP(&options.IgnoreWhitespace,
+			"ignore-whitespace", "w", options.IgnoreWhitespace,
+			"ignore ASCII whitespace characters when decoding")
 		rootCmd.AddCommand(cmd)
 	}
 }
 
-func transcodeStreaming(codec StreamingCodec, in io.Reader, out io.WriteCloser, opts *Options) func(*cobra.Command, []string) {
+func transcodeStreaming(codec StreamingCodec, in io.Reader, out io.WriteCloser, o *Options) func(*cobra.Command, []string) {
 	return func(c *cobra.Command, s []string) {
-		if opts.Decode {
-			in = codec.Decoder(in)
+		if o.Decode {
+			in = codec.Decoder(in, o)
 		} else {
 			out = codec.Encoder(out)
 		}
@@ -59,9 +62,3 @@ func transcodeStreaming(codec StreamingCodec, in io.Reader, out io.WriteCloser, 
 		}
 	}
 }
-
-type WriteNoopCloser struct{ io.Writer }
-
-func (WriteNoopCloser) Close() error { return nil }
-
-func wnc(w io.Writer) io.WriteCloser { return WriteNoopCloser{w} }

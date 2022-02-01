@@ -14,6 +14,8 @@ type Options struct {
 
 	CheckVersion     *uint8
 	CheckVersionFlag string
+
+	Key string
 }
 
 func main() {

@@ -17,6 +17,7 @@ Available Commands:
   base64      Encode "base64" between stdin and stdout.
   help        Help about any command
   hex         Encode "hex" between stdin and stdout.
+  rot13       Encode "rot13" between stdin and stdout.
   xor         Encode "xor" between stdin and stdout.
 
 Flags:

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"enc/rot13"
 	"enc/xor"
 	"encoding/ascii85"
 	"encoding/base32"
@@ -33,6 +34,9 @@ var streamingCodecs = []StreamingCodec{
 	{"hex",
 		func(r io.Reader, o *Options) io.Reader { return hex.NewDecoder(wsiro(r, o)) },
 		func(w io.Writer, o *Options) io.WriteCloser { return wnc(hex.NewEncoder(w)) }},
+	{"rot13",
+		func(r io.Reader, o *Options) io.Reader { return rot13NewDecoderO(wsiro(r, o), o) },
+		func(w io.Writer, o *Options) io.WriteCloser { return wnc(rot13NewEncoderO(w, o)) }},
 	{"xor",
 		func(r io.Reader, o *Options) io.Reader { return xorNewDecoderO(wsiro(r, o), o) },
 		func(w io.Writer, o *Options) io.WriteCloser { return wnc(xorNewEncoderO(w, o)) }},
@@ -45,7 +49,10 @@ func addStreamingCodecs(rootCmd *cobra.Command, options *Options) {
 			Short: fmt.Sprintf("Encode %q between stdin and stdout.", codec.Name),
 			Run:   transcodeStreaming(codec, os.Stdin, os.Stdout, options),
 		}
-		if codec.Name == "xor" {
+		switch codec.Name {
+		case "rot13":
+			cmd.Flags().Uint8VarP(&options.Offset, "offset", "r", 13, "offset for ROT13 transcoding")
+		case "xor":
 			cmd.Flags().StringVarP(&options.Key, "key", "k", "", "key for xor transcoding")
 		}
 		cmd.Flags().BoolVarP(&options.Decode, "decode", "D", options.Decode,
@@ -76,14 +83,28 @@ func transcodeStreaming(codec StreamingCodec, in io.Reader, out io.WriteCloser, 
 
 func xorNewDecoderO(r io.Reader, o *Options) io.Reader {
 	if o.Key == "" {
-		log.Fatalf(`FATAL: xor with empty key has no effect, use "--key=...".`)
+		log.Println(`WARNING: xor with empty key has no effect, try "--key=...".`)
 	}
 	return xor.NewDecoder([]byte(o.Key), r)
 }
 
 func xorNewEncoderO(w io.Writer, o *Options) io.Writer {
 	if o.Key == "" {
-		log.Fatalf(`FATAL: xor with empty key has no effect, use "--key=...".`)
+		log.Println(`WARNING: xor with empty key has no effect, try "--key=...".`)
 	}
 	return xor.NewEncoder([]byte(o.Key), w)
+}
+
+func rot13NewDecoderO(r io.Reader, o *Options) io.Reader {
+	if o.Offset%26 == 0 {
+		log.Println("WARNING: rot13 with offset%%26==0 has no effect")
+	}
+	return rot13.NewDecoder(o.Offset, r)
+}
+
+func rot13NewEncoderO(w io.Writer, o *Options) io.Writer {
+	if o.Offset%26 == 0 {
+		log.Println("WARNING: rot13 with offset%%26==0 has no effect")
+	}
+	return rot13.NewEncoder(o.Offset, w)
 }

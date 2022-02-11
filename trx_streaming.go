@@ -60,20 +60,30 @@ func addStreamingCodecs(rootCmd *cobra.Command, options *Options) {
 		cmd.Flags().BoolVarP(&options.IgnoreWhitespace,
 			"ignore-whitespace", "w", options.IgnoreWhitespace,
 			"ignore ASCII whitespace characters when decoding")
+		cmd.Flags().BoolVarP(&options.AppendNewline,
+			"append-newline", "n", options.AppendNewline,
+			"append a trailing newline to the output")
 		rootCmd.AddCommand(cmd)
 	}
 }
 
-func transcodeStreaming(codec StreamingCodec, in io.Reader, out io.WriteCloser, o *Options) func(*cobra.Command, []string) {
+func transcodeStreaming(codec StreamingCodec, ins io.Reader, outs io.WriteCloser, o *Options) func(*cobra.Command, []string) {
 	return func(c *cobra.Command, s []string) {
+		var in io.Reader = ins
+		var out io.WriteCloser = outs
 		if o.Decode {
-			in = codec.Decoder(in, o)
+			in = codec.Decoder(ins, o)
 		} else {
-			out = codec.Encoder(out, o)
+			out = codec.Encoder(outs, o)
 		}
 
 		if _, err := io.Copy(out, in); err != nil {
 			log.Fatalf("FATAL: transcoding failed: %v", err)
+		}
+		if o.AppendNewline {
+			if _, err := outs.Write([]byte{'\n'}); err != nil {
+				log.Fatalf("FATAL: failed to append trailing newline: %v", err)
+			}
 		}
 		if err := out.Close(); err != nil {
 			log.Fatalf("FATAL: failed to close output stream: %v", err)

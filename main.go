@@ -11,6 +11,7 @@ import (
 type Options struct {
 	Decode           bool
 	IgnoreWhitespace bool
+	AppendNewline    bool
 
 	CheckVersion     *uint8
 	CheckVersionFlag string
@@ -33,6 +34,9 @@ func main() {
 	rootCmd.Flags().BoolVarP(&options.IgnoreWhitespace,
 		"ignore-whitespace", "w", options.IgnoreWhitespace,
 		"ignore ASCII whitespace characters when decoding")
+	rootCmd.Flags().BoolVarP(&options.AppendNewline,
+		"append-newline", "n", options.AppendNewline,
+		"append a trailing newline to the output")
 
 	addStreamingCodecs(rootCmd, options)
 	addBufferedCodecs(rootCmd, options)

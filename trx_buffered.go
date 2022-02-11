@@ -36,12 +36,16 @@ func addBufferedCodecs(rootCmd *cobra.Command, options *Options) {
 				transcodeBuffered(codec, options)
 			},
 		}
-		codec.SetFlags(cmd.Flags(), options)
-		cmd.Flags().BoolVarP(&options.Decode, "decode", "D", options.Decode,
+		flags := cmd.Flags()
+		codec.SetFlags(flags, options)
+		flags.BoolVarP(&options.Decode, "decode", "D", options.Decode,
 			`decode input from "base58" to binary`)
-		cmd.Flags().BoolVarP(&options.IgnoreWhitespace,
+		flags.BoolVarP(&options.IgnoreWhitespace,
 			"ignore-whitespace", "w", options.IgnoreWhitespace,
 			"ignore ASCII whitespace characters when decoding")
+		flags.BoolVarP(&options.AppendNewline,
+			"append-newline", "n", options.AppendNewline,
+			"append a trailing newline to the output")
 		rootCmd.AddCommand(cmd)
 	}
 }
@@ -117,6 +121,9 @@ func transcodeBuffered(codec BufferedCodec, options *Options) {
 	}
 	if err != nil {
 		log.Fatalf("FATAL: transcoding %q failed: %v", codec.Name, err)
+	}
+	if options.AppendNewline {
+		output = append(output, '\n')
 	}
 	if _, err := os.Stdout.Write(output); err != nil {
 		log.Fatalf("FATAL: failed to write output: %v", err)

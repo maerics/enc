@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -111,6 +112,9 @@ func transcodeBuffered(codec BufferedCodec, options *Options) {
 	input, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {
 		log.Fatalf("FATAL: failed to read stdin: %v", err)
+	}
+	if options.IgnoreWhitespace {
+		input = regexp.MustCompile(`\s`).ReplaceAll(input, nil)
 	}
 
 	var output []byte

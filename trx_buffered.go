@@ -29,7 +29,7 @@ func addBufferedCodecs(rootCmd *cobra.Command, options *Options) {
 	for _, codec := range bufferedCodecs {
 		cmd := &cobra.Command{
 			Use:   codec.Name,
-			Short: fmt.Sprintf("Encode %q between stdin and stdout.", codec.Name),
+			Short: fmt.Sprintf("%v %q between stdin and stdout.", options.ActName, codec.Name),
 			Run: func(*cobra.Command, []string) {
 				if err := codec.ParseFlags(options); err != nil {
 					log.Fatalf("FATAL: %v", err)

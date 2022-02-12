@@ -46,7 +46,7 @@ func addStreamingCodecs(rootCmd *cobra.Command, options *Options) {
 	for _, codec := range streamingCodecs {
 		cmd := &cobra.Command{
 			Use:   codec.Name,
-			Short: fmt.Sprintf("Encode %q between stdin and stdout.", codec.Name),
+			Short: fmt.Sprintf("%v %q between stdin and stdout.", options.ActName, codec.Name),
 			Run:   transcodeStreaming(codec, os.Stdin, os.Stdout, options),
 		}
 		switch codec.Name {

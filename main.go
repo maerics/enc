@@ -8,7 +8,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	EncodeCmdName = "enc"
+	EncodeActName = "Encode"
+
+	DecodeCmdName = "dec"
+	DecodeActName = "Decode"
+)
+
 type Options struct {
+	CmdName string
+	ActName string
+
 	Decode           bool
 	IgnoreWhitespace bool
 	AppendNewline    bool
@@ -25,7 +36,7 @@ func main() {
 	options := getDefaultOptions()
 
 	rootCmd := &cobra.Command{
-		Use: "enc", Short: "Transcode various formats between stdin and stdout.",
+		Use: options.CmdName, Short: "Transcode various formats between stdin and stdout.",
 		CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
 	}
 	rootCmd.Flags().BoolVarP(&options.Decode,
@@ -47,10 +58,12 @@ func main() {
 }
 
 func getDefaultOptions() *Options {
-	options := &Options{}
+	options := &Options{CmdName: EncodeCmdName, ActName: EncodeActName}
 	cmdName := filepath.Base(os.Args[0])
-	if cmdName == "dec" {
+	if cmdName == DecodeCmdName {
 		options.Decode = true
+		options.CmdName = DecodeCmdName
+		options.ActName = DecodeActName
 	}
 	return options
 }

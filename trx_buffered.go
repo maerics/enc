@@ -43,7 +43,7 @@ func addBufferedCodecs(rootCmd *cobra.Command, options *Options) {
 			`decode input from "base58" to binary`)
 		flags.BoolVarP(&options.IgnoreWhitespace,
 			"ignore-whitespace", "w", options.IgnoreWhitespace,
-			"ignore ASCII whitespace characters when decoding")
+			"ignore whitespace characters when decoding")
 		flags.BoolVarP(&options.AppendNewline,
 			"append-newline", "n", options.AppendNewline,
 			"append a trailing newline to the output")

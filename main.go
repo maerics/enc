@@ -30,10 +30,10 @@ func main() {
 	}
 	rootCmd.Flags().BoolVarP(&options.Decode,
 		"decode", "D", options.Decode,
-		"decode input from target encoding to binary")
+		"decode input on stdin")
 	rootCmd.Flags().BoolVarP(&options.IgnoreWhitespace,
 		"ignore-whitespace", "w", options.IgnoreWhitespace,
-		"ignore ASCII whitespace characters when decoding")
+		"ignore whitespace characters when decoding")
 	rootCmd.Flags().BoolVarP(&options.AppendNewline,
 		"append-newline", "n", options.AppendNewline,
 		"append a trailing newline to the output")

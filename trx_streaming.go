@@ -59,7 +59,7 @@ func addStreamingCodecs(rootCmd *cobra.Command, options *Options) {
 			fmt.Sprintf("decode input from %q to binary", codec.Name))
 		cmd.Flags().BoolVarP(&options.IgnoreWhitespace,
 			"ignore-whitespace", "w", options.IgnoreWhitespace,
-			"ignore ASCII whitespace characters when decoding")
+			"ignore whitespace characters when decoding")
 		cmd.Flags().BoolVarP(&options.AppendNewline,
 			"append-newline", "n", options.AppendNewline,
 			"append a trailing newline to the output")

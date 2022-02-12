@@ -23,7 +23,7 @@ Available Commands:
 Flags:
   -D, --decode              decode input from target encoding to binary
   -h, --help                help for enc
-  -w, --ignore-whitespace   ignore ASCII whitespace characters when decoding
+  -w, --ignore-whitespace   ignore whitespace characters when decoding
 
 Use "enc [command] --help" for more information about a command.
 ```

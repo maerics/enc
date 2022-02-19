@@ -80,13 +80,13 @@ func transcodeStreaming(codec StreamingCodec, ins io.Reader, outs io.WriteCloser
 		if _, err := io.Copy(out, in); err != nil {
 			log.Fatalf("FATAL: transcoding failed: %v", err)
 		}
+		if err := out.Close(); err != nil {
+			log.Fatalf("FATAL: failed to close output stream: %v", err)
+		}
 		if o.AppendNewline {
 			if _, err := outs.Write([]byte{'\n'}); err != nil {
 				log.Fatalf("FATAL: failed to append trailing newline: %v", err)
 			}
-		}
-		if err := out.Close(); err != nil {
-			log.Fatalf("FATAL: failed to close output stream: %v", err)
 		}
 	}
 }

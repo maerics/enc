@@ -3,14 +3,13 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
 
-	"github.com/btcsuite/btcutil/base58"
+	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -18,8 +17,8 @@ import (
 type BufferedCodec struct {
 	Name string
 
-	Encode func([]byte, *Options) ([]byte, error)
-	Decode func([]byte, *Options) ([]byte, error)
+	Encode func([]byte, io.Writer, *Options) ([]byte, error)
+	Decode func([]byte, io.Writer, *Options) ([]byte, error)
 
 	SetFlags   func(*pflag.FlagSet, *Options)
 	ParseFlags func(*Options) error
@@ -34,7 +33,7 @@ func addBufferedCodecs(rootCmd *cobra.Command, options *Options) {
 				if err := codec.ParseFlags(options); err != nil {
 					log.Fatalf("FATAL: %v", err)
 				}
-				transcodeBuffered(codec, options)
+				transcodeBuffered(rootCmd, codec, options)
 			},
 		}
 		flags := cmd.Flags()
@@ -53,7 +52,7 @@ func addBufferedCodecs(rootCmd *cobra.Command, options *Options) {
 
 var bufferedCodecs = []BufferedCodec{
 	{Name: "base58",
-		Encode: func(input []byte, o *Options) ([]byte, error) {
+		Encode: func(input []byte, stderr io.Writer, o *Options) ([]byte, error) {
 			var output []byte
 			if o.CheckVersion != nil {
 				output = []byte(base58.CheckEncode(input, *o.CheckVersion))
@@ -65,12 +64,12 @@ var bufferedCodecs = []BufferedCodec{
 			}
 			return output, nil
 		},
-		Decode: func(input []byte, options *Options) ([]byte, error) {
+		Decode: func(input []byte, stderr io.Writer, options *Options) ([]byte, error) {
 			// First try check decoding.
 			var version byte
 			output, version, err := base58.CheckDecode(string(input))
 			if err == nil {
-				fmt.Fprintf(os.Stderr, "Version Byte: %v (0x%02x)\n", version, version)
+				fmt.Fprintf(stderr, "Version Byte: %v (0x%02x)\n", version, version)
 				return output, nil
 			}
 
@@ -108,8 +107,11 @@ var bufferedCodecs = []BufferedCodec{
 	},
 }
 
-func transcodeBuffered(codec BufferedCodec, options *Options) {
-	input, err := ioutil.ReadAll(os.Stdin)
+func transcodeBuffered(c *cobra.Command, codec BufferedCodec, options *Options) {
+	stdin := c.InOrStdin()
+	stdout := NoopCloseWriteCloser{c.OutOrStdout()}
+	stderr := NoopCloseWriteCloser{c.OutOrStderr()}
+	input, err := io.ReadAll(stdin)
 	if err != nil {
 		log.Fatalf("FATAL: failed to read stdin: %v", err)
 	}
@@ -119,9 +121,9 @@ func transcodeBuffered(codec BufferedCodec, options *Options) {
 
 	var output []byte
 	if options.Decode {
-		output, err = codec.Decode(input, options)
+		output, err = codec.Decode(input, stderr, options)
 	} else {
-		output, err = codec.Encode(input, options)
+		output, err = codec.Encode(input, stderr, options)
 	}
 	if err != nil {
 		log.Fatalf("FATAL: transcoding %q failed: %v", codec.Name, err)
@@ -129,10 +131,10 @@ func transcodeBuffered(codec BufferedCodec, options *Options) {
 	if options.AppendNewline {
 		output = append(output, '\n')
 	}
-	if _, err := os.Stdout.Write(output); err != nil {
+	if _, err := stdout.Write(output); err != nil {
 		log.Fatalf("FATAL: failed to write output: %v", err)
 	}
-	if err := os.Stdout.Close(); err != nil {
+	if err := stdout.Close(); err != nil {
 		log.Fatalf("FATAL: failed to close output stream: %v", err)
 	}
 }

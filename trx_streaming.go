@@ -10,44 +10,48 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 
 	"github.com/spf13/cobra"
 )
 
 type StreamingCodec struct {
 	Name    string
+	Aliases []string
 	Decoder func(io.Reader, *Options) io.Reader
 	Encoder func(io.Writer, *Options) io.WriteCloser
 }
 
 var streamingCodecs = []StreamingCodec{
-	{"ascii85",
+	{"ascii85", nil,
 		func(r io.Reader, o *Options) io.Reader { return ascii85.NewDecoder(wsiro(r, o)) },
 		func(w io.Writer, o *Options) io.WriteCloser { return ascii85.NewEncoder(w) }},
-	{"base32",
+	{"base32", nil,
 		func(r io.Reader, o *Options) io.Reader { return base32.NewDecoder(base32.StdEncoding, wsiro(r, o)) },
 		func(w io.Writer, o *Options) io.WriteCloser { return base32.NewEncoder(base32.StdEncoding, w) }},
-	{"base64",
+	{"base64", nil,
 		func(r io.Reader, o *Options) io.Reader { return base64.NewDecoder(base64.StdEncoding, wsiro(r, o)) },
 		func(w io.Writer, o *Options) io.WriteCloser { return base64.NewEncoder(base64.StdEncoding, w) }},
-	{"hex",
+	{"hex", nil,
 		func(r io.Reader, o *Options) io.Reader { return hex.NewDecoder(wsiro(r, o)) },
 		func(w io.Writer, o *Options) io.WriteCloser { return wnc(hex.NewEncoder(w)) }},
-	{"rot13",
+	{"rot13", []string{"rot", "caesar"},
 		func(r io.Reader, o *Options) io.Reader { return rot13NewDecoderO(wsiro(r, o), o) },
 		func(w io.Writer, o *Options) io.WriteCloser { return wnc(rot13NewEncoderO(w, o)) }},
-	{"xor",
+	{"xor", nil,
 		func(r io.Reader, o *Options) io.Reader { return xorNewDecoderO(wsiro(r, o), o) },
 		func(w io.Writer, o *Options) io.WriteCloser { return wnc(xorNewEncoderO(w, o)) }},
 }
 
 func addStreamingCodecs(rootCmd *cobra.Command, options *Options) {
+	stdin := rootCmd.InOrStdin()
+	stdout := NoopCloseWriteCloser{rootCmd.OutOrStdout()}
+
 	for _, codec := range streamingCodecs {
 		cmd := &cobra.Command{
-			Use:   codec.Name,
-			Short: fmt.Sprintf("%v %q between stdin and stdout.", options.ActName, codec.Name),
-			Run:   transcodeStreaming(codec, os.Stdin, os.Stdout, options),
+			Use:     codec.Name,
+			Aliases: codec.Aliases,
+			Short:   fmt.Sprintf("%v %q between stdin and stdout.", options.ActName, codec.Name),
+			Run:     transcodeStreaming(codec, stdin, stdout, options),
 		}
 		switch codec.Name {
 		case "rot13":
@@ -65,6 +69,12 @@ func addStreamingCodecs(rootCmd *cobra.Command, options *Options) {
 			"append a trailing newline to the output")
 		rootCmd.AddCommand(cmd)
 	}
+}
+
+type NoopCloseWriteCloser struct{ io.Writer }
+
+func (NoopCloseWriteCloser) Close() error {
+	return nil
 }
 
 func transcodeStreaming(codec StreamingCodec, ins io.Reader, outs io.WriteCloser, o *Options) func(*cobra.Command, []string) {

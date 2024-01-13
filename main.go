@@ -31,28 +31,33 @@ type Options struct {
 	Offset uint8
 }
 
+func newEncCmd(options *Options) *cobra.Command {
+	return &cobra.Command{
+		Use: options.CmdName, Short: "Transcode various formats between stdin and stdout.",
+		CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
+	}
+}
+
+var encCmd = newEncCmd(getDefaultOptions())
+
 func main() {
 	log.SetFlags(0)
 	options := getDefaultOptions()
 
-	rootCmd := &cobra.Command{
-		Use: options.CmdName, Short: "Transcode various formats between stdin and stdout.",
-		CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
-	}
-	rootCmd.Flags().BoolVarP(&options.Decode,
+	encCmd.Flags().BoolVarP(&options.Decode,
 		"decode", "D", options.Decode,
 		"decode input on stdin")
-	rootCmd.Flags().BoolVarP(&options.IgnoreWhitespace,
+	encCmd.Flags().BoolVarP(&options.IgnoreWhitespace,
 		"ignore-whitespace", "w", options.IgnoreWhitespace,
 		"ignore whitespace characters when decoding")
-	rootCmd.Flags().BoolVarP(&options.AppendNewline,
+	encCmd.Flags().BoolVarP(&options.AppendNewline,
 		"append-newline", "n", options.AppendNewline,
 		"append a trailing newline to the output")
 
-	addStreamingCodecs(rootCmd, options)
-	addBufferedCodecs(rootCmd, options)
+	addStreamingCodecs(encCmd, options)
+	addBufferedCodecs(encCmd, options)
 
-	if err := rootCmd.Execute(); err != nil {
+	if err := encCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }

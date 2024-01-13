@@ -34,11 +34,6 @@ $ echo OK | enc hex ; echo
 4f4b0a
 $ echo 4f4b0a | enc -D hex -w
 OK
-$ echo OK | enc base58 --check=0x7b ; echo
-MdG23SHmSJu
-$ echo -n MdG23SHmSJu | enc -D base58
-Version Byte: 123 (0x7b)
-OK
 $ echo 'Attack!' | enc xor --key=secret | enc base64 ; echo
 MhEXEwYfUm8=
 $ echo MhEXEwYfUm8= | enc -D base64 | enc -D xor --key=secret

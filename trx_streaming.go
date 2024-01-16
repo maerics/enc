@@ -102,17 +102,19 @@ func transcodeStreaming(codec StreamingCodec, ins io.Reader, outs io.WriteCloser
 }
 
 func xorNewDecoderO(r io.Reader, o *Options) io.Reader {
-	if o.Key == "" {
+	key := getSecretKey(o.Key)
+	if key == "" {
 		log.Println(`WARNING: xor with empty key has no effect, try "--key=...".`)
 	}
-	return xor.NewDecoder([]byte(o.Key), r)
+	return xor.NewDecoder([]byte(key), r)
 }
 
 func xorNewEncoderO(w io.Writer, o *Options) io.Writer {
-	if o.Key == "" {
+	key := getSecretKey(o.Key)
+	if key == "" {
 		log.Println(`WARNING: xor with empty key has no effect, try "--key=...".`)
 	}
-	return xor.NewEncoder([]byte(o.Key), w)
+	return xor.NewEncoder([]byte(key), w)
 }
 
 func rot13NewDecoderO(r io.Reader, o *Options) io.Reader {

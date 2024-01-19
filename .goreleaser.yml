@@ -63,6 +63,10 @@ brews:
     # Templates: allowed
     # skip_upload: true
 
+    install: |
+      bin.install "#{prefix}/enc"
+      bin.install_symlink "#{prefix}/enc" => "#{prefix}/dec"
+
     # Repository to push the generated files to.
     repository:
       owner: maerics

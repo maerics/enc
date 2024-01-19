@@ -28,13 +28,13 @@ func addBufferedCodecs(rootCmd *cobra.Command, options *Options) {
 	for _, codec := range bufferedCodecs {
 		cmd := &cobra.Command{
 			Use:   codec.Name,
-			Short: fmt.Sprintf("%v %q between stdin and stdout.", options.ActName, codec.Name),
-			Run: func(*cobra.Command, []string) {
-				if err := codec.ParseFlags(options); err != nil {
-					log.Fatalf("FATAL: %v", err)
-				}
-				transcodeBuffered(rootCmd, codec, options)
-			},
+			Short: fmt.Sprintf("%v input as %q", options.ActName, codec.Name),
+		}
+		cmd.Run = func(*cobra.Command, []string) {
+			if err := codec.ParseFlags(options); err != nil {
+				log.Fatalf("FATAL: %v", err)
+			}
+			transcodeBuffered(cmd, codec, options)
 		}
 		flags := cmd.Flags()
 		codec.SetFlags(flags, options)
@@ -109,8 +109,8 @@ var bufferedCodecs = []BufferedCodec{
 
 func transcodeBuffered(c *cobra.Command, codec BufferedCodec, options *Options) {
 	stdin := c.InOrStdin()
-	stdout := NoopCloseWriteCloser{c.OutOrStdout()}
-	stderr := NoopCloseWriteCloser{c.OutOrStderr()}
+	stdout := wnc(c.OutOrStdout())
+	stderr := wnc(c.OutOrStderr())
 	input, err := io.ReadAll(stdin)
 	if err != nil {
 		log.Fatalf("FATAL: failed to read stdin: %v", err)

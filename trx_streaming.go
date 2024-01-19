@@ -43,16 +43,14 @@ var streamingCodecs = []StreamingCodec{
 }
 
 func addStreamingCodecs(rootCmd *cobra.Command, options *Options) {
-	stdin := rootCmd.InOrStdin()
-	stdout := NoopCloseWriteCloser{rootCmd.OutOrStdout()}
-
 	for _, codec := range streamingCodecs {
 		cmd := &cobra.Command{
 			Use:     codec.Name,
 			Aliases: codec.Aliases,
-			Short:   fmt.Sprintf("%v %q between stdin and stdout.", options.ActName, codec.Name),
-			Run:     transcodeStreaming(codec, stdin, stdout, options),
+			Short:   fmt.Sprintf("%v input as %q", options.ActName, codec.Name),
 		}
+		cmd.Run = transcodeStreaming(cmd, codec, options)
+
 		switch codec.Name {
 		case "rot13":
 			cmd.Flags().Uint8VarP(&options.Offset, "offset", "r", 13, "offset for ROT13 transcoding")
@@ -67,18 +65,16 @@ func addStreamingCodecs(rootCmd *cobra.Command, options *Options) {
 		cmd.Flags().BoolVarP(&options.AppendNewline,
 			"append-newline", "n", options.AppendNewline,
 			"append a trailing newline to the output")
+
 		rootCmd.AddCommand(cmd)
 	}
 }
 
-type NoopCloseWriteCloser struct{ io.Writer }
-
-func (NoopCloseWriteCloser) Close() error {
-	return nil
-}
-
-func transcodeStreaming(codec StreamingCodec, ins io.Reader, outs io.WriteCloser, o *Options) func(*cobra.Command, []string) {
+func transcodeStreaming(cmd *cobra.Command, codec StreamingCodec, o *Options) func(*cobra.Command, []string) {
 	return func(c *cobra.Command, s []string) {
+		ins := c.InOrStdin()
+		outs := wnc(c.OutOrStdout())
+
 		var in io.Reader = ins
 		var out io.WriteCloser = outs
 		if o.Decode {

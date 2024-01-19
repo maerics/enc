@@ -64,8 +64,8 @@ brews:
     # skip_upload: true
 
     install: |
-      bin.install "#{prefix}/enc"
-      bin.install_symlink "#{prefix}/enc" => "#{prefix}/dec"
+      bin.install "enc"
+      bin.install_symlink "enc" => "dec"
 
     # Repository to push the generated files to.
     repository:

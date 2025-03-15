@@ -49,6 +49,7 @@ func main() {
 	log.SetFlags(0)
 	options := getDefaultOptions()
 
+	// Setup global flags.
 	encCmd.PersistentFlags().BoolVarP(&options.Decode,
 		"decode", "D", options.Decode,
 		"decode input on stdin")
@@ -69,9 +70,12 @@ func main() {
 		setFilenameOptions(cmd, options)
 	}
 
+	// Add the subcommands
 	addStreamingCodecs(encCmd, options)
 	addBufferedCodecs(encCmd, options)
+	addRSACommands(encCmd, options)
 
+	// Execute the "enc/dec" cmd.
 	if err := encCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

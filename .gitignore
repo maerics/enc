@@ -2,3 +2,4 @@ enc
 dec
 dist
 *.dat
+*.key

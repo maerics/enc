@@ -34,25 +34,23 @@ type Options struct {
 
 	InputFilename  string
 	OutputFilename string
+
+	PrivateKeyFilename string
+	PublicKeyFilename  string
+	KeyFilename        string
+	Label              string
 }
 
 func newEncCmd(options *Options) *cobra.Command {
-	return &cobra.Command{
+	encCmd := &cobra.Command{
 		Use: options.CmdName, Short: "Transcode various formats between streams or files.",
 		CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
 	}
-}
-
-var encCmd = newEncCmd(getDefaultOptions())
-
-func main() {
-	log.SetFlags(0)
-	options := getDefaultOptions()
 
 	// Setup global flags.
 	encCmd.PersistentFlags().BoolVarP(&options.Decode,
 		"decode", "D", options.Decode,
-		"decode input on stdin")
+		"decode or decrypt input on stdin")
 	encCmd.PersistentFlags().BoolVarP(&options.IgnoreWhitespace,
 		"ignore-whitespace", "w", options.IgnoreWhitespace,
 		"ignore whitespace characters when decoding")
@@ -75,6 +73,13 @@ func main() {
 	addBufferedCodecs(encCmd, options)
 	addRSACommands(encCmd, options)
 
+	return encCmd
+}
+
+var encCmd = newEncCmd(getDefaultOptions())
+
+func main() {
+	log.SetFlags(0)
 	// Execute the "enc/dec" cmd.
 	if err := encCmd.Execute(); err != nil {
 		os.Exit(1)

@@ -34,7 +34,7 @@ func TestRsaGenerate(t *testing.T) {
 		{args: []string{"rsa", "generate", "--key-size=2048"}, keySize: 2048},
 		{args: []string{"rsa", "generate", "--key-size=4096"}, keySize: 4096},
 	} {
-		generateCmd = newEncCmd(getDefaultOptions())
+		generateCmd := newEncCmd(getDefaultOptions())
 		generateCmd.SetArgs(eg.args)
 		generateCmd.SetIn(bytes.NewReader([]byte{}))
 		stdout, stderr := new(bytes.Buffer), new(bytes.Buffer)

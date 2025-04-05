@@ -7,6 +7,7 @@ import (
 	"log"
 	"math"
 	"path"
+	"reflect"
 	"regexp"
 	"strings"
 	"testing"
@@ -33,13 +34,15 @@ func TestRsaGenerate(t *testing.T) {
 		{args: []string{"rsa", "generate", "--key-size=2048"}, keySize: 2048},
 		{args: []string{"rsa", "generate", "--key-size=4096"}, keySize: 4096},
 	} {
-		encCmd = newEncCmd(getDefaultOptions())
-		encCmd.SetArgs(eg.args)
-		encCmd.SetIn(bytes.NewReader([]byte{}))
+		generateCmd = newEncCmd(getDefaultOptions())
+		generateCmd.SetArgs(eg.args)
+		generateCmd.SetIn(bytes.NewReader([]byte{}))
 		stdout, stderr := new(bytes.Buffer), new(bytes.Buffer)
-		encCmd.SetOut(stdout)
-		encCmd.SetErr(stderr)
-		main()
+		generateCmd.SetOut(stdout)
+		generateCmd.SetErr(stderr)
+		if err := generateCmd.Execute(); err != nil {
+			t.Fatal(err)
+		}
 		actualStdout := stdout.Bytes()
 		actualStderr := stderr.Bytes()
 
@@ -117,6 +120,47 @@ func TestRsaEncryptionEndToEnd(t *testing.T) {
 		decrypted := decryptStdout.String()
 		if decrypted != plaintext {
 			t.Fatalf("example %v expected %q, got %q", i, decrypted, plaintext)
+		}
+	}
+}
+
+func TestRsaExtract(t *testing.T) {
+	tempDir := t.TempDir()
+	privateKeyFilename := func(x int) string { return path.Join(tempDir, fmt.Sprintf("priv.key%v", x)) }
+
+	for i, eg := range []struct {
+		generateArgs []string
+	}{
+		{generateArgs: []string{"rsa", "generate", "--private-key", privateKeyFilename(0)}},
+		{generateArgs: []string{"rsa", "generate", "-s256", "--private-key", privateKeyFilename(1)}},
+		{generateArgs: []string{"rsa", "generate", "--key-size=2048", "--private-key", privateKeyFilename(2)}},
+	} {
+		// Run the "rsa generate" command, store the private key to a file, and the public key in memory.
+		generateCmd := newEncCmd(getDefaultOptions())
+		generateCmd.SetArgs(eg.generateArgs)
+		generateCmd.SetIn(bytes.NewReader([]byte{}))
+		stdout, stderr := new(bytes.Buffer), new(bytes.Buffer)
+		generateCmd.SetOut(stdout)
+		generateCmd.SetErr(stderr)
+		if err := generateCmd.Execute(); err != nil {
+			t.Fatal(err)
+		}
+		generatedPublicKeyBytes := stdout.Bytes()
+		_ = stderr.Bytes()
+
+		// Run the "rsa extract" cmd to ensure the same public key is generated.
+		extractCmd := newEncCmd(getDefaultOptions())
+		extractCmd.SetArgs([]string{"rsa", "extract", "--private-key", eg.generateArgs[len(eg.generateArgs)-1]})
+		stdout, stderr = new(bytes.Buffer), new(bytes.Buffer)
+		extractCmd.SetOut(stdout)
+		extractCmd.SetErr(stderr)
+		if err := extractCmd.Execute(); err != nil {
+			t.Fatal(err)
+		}
+		extractedPublicKeyBytes := stdout.Bytes()
+		if !reflect.DeepEqual(extractedPublicKeyBytes, generatedPublicKeyBytes) {
+			t.Fatalf("generated/extracted public keys do not match for example %v:\ngenerated: %v\nextracted: %v",
+				i, generatedPublicKeyBytes, extractedPublicKeyBytes)
 		}
 	}
 }

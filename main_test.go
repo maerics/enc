@@ -22,10 +22,10 @@ func TestMainHelp(t *testing.T) {
 
 	for _, args := range helpArgs {
 		buf := &bytes.Buffer{}
-		encCmd = newEncCmd(getDefaultOptions())
-		encCmd.SetArgs(args)
-		encCmd.SetIn(nil)
-		encCmd.SetOut(buf)
+		generateCmd = newEncCmd(getDefaultOptions())
+		generateCmd.SetArgs(args)
+		generateCmd.SetIn(nil)
+		generateCmd.SetOut(buf)
 		main()
 		output := buf.String()
 
@@ -84,11 +84,11 @@ func TestKnownOutputs(t *testing.T) {
 		{[]string{"xor", "--key=secret"}, []byte("Attack!\n"), []byte{0x32, 0x11, 0x17, 0x13, 0x6, 0x1f, 0x52, 0x6f}, nil},
 		{[]string{"xor", "-D", "--key=secret"}, []byte([]byte{0x32, 0x11, 0x17, 0x13, 0x6, 0x1f, 0x52, 0x6f}), []byte("Attack!\n"), nil},
 	} {
-		encCmd = newEncCmd(getDefaultOptions())
-		encCmd.SetArgs(example.args)
-		encCmd.SetIn(bytes.NewReader(example.input))
+		generateCmd = newEncCmd(getDefaultOptions())
+		generateCmd.SetArgs(example.args)
+		generateCmd.SetIn(bytes.NewReader(example.input))
 		stdout := new(bytes.Buffer)
-		encCmd.SetOut(stdout)
+		generateCmd.SetOut(stdout)
 		main()
 		actualStdout := stdout.Bytes()
 		if !reflect.DeepEqual(actualStdout, example.output) {
@@ -178,18 +178,18 @@ func TestFileIO(t *testing.T) {
 			}
 
 			// Run the test.
-			encCmd = newEncCmd(getDefaultOptions())
-			encCmd.SetArgs(args)
+			generateCmd = newEncCmd(getDefaultOptions())
+			generateCmd.SetArgs(args)
 
 			var stdin io.Reader
 			if !hasInputFile {
 				stdin = bytes.NewReader(example.input)
-				encCmd.SetIn(stdin)
+				generateCmd.SetIn(stdin)
 			}
 
 			stdout := new(bytes.Buffer)
 			if !hasOutputFile {
-				encCmd.SetOut(stdout)
+				generateCmd.SetOut(stdout)
 			}
 
 			main()

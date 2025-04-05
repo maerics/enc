@@ -27,6 +27,7 @@ const (
 
 	FlagNamePrivateKey = "private-key"
 	FlagNamePublicKey  = "public-key"
+	FlagNameKey        = "key"
 )
 
 var (
@@ -73,7 +74,8 @@ func decrypt(cmd *cobra.Command, o *Options) {
 	}
 
 	// Read and parse the private key.
-	privateReader := fileReader(cmd, FilenameDescriptionPrivateKey, o.PrivateKeyFilename, false)
+	privateKeyFilename := parseKeyFlagFrom(o, FlagNamePrivateKey, o.PrivateKeyFilename)
+	privateReader := fileReader(cmd, FilenameDescriptionPrivateKey, privateKeyFilename, false)
 	if privateReader == nil {
 		log.Fatalf("FATAL: missing or invalid value for %v flag %v=%q",
 			FilenameDescriptionPrivateKey, "--"+FlagNamePrivateKey, o.PrivateKeyFilename)
@@ -111,7 +113,12 @@ func encrypt(cmd *cobra.Command, o *Options) {
 	}
 
 	// Read and parse the public key.
-	publicReader := fileReader(cmd, FilenameDescriptionPublicKey, o.PublicKeyFilename, false)
+	publicKeyFilename := parseKeyFlagFrom(o, FlagNamePublicKey, o.PublicKeyFilename)
+	publicReader := fileReader(cmd, FilenameDescriptionPublicKey, publicKeyFilename, false)
+	if publicReader == nil {
+		log.Fatalf("FATAL: missing or invalid value for %v flag %v=%q",
+			FilenameDescriptionPublicKey, "--"+FlagNamePublicKey, o.PublicKeyFilename)
+	}
 	if publicReader == nil {
 		log.Fatalf("FATAL: missing or invalid value for %v flag %v=%q",
 			FilenameDescriptionPublicKey, "--"+FlagNamePublicKey, o.PublicKeyFilename)
@@ -141,6 +148,20 @@ func encrypt(cmd *cobra.Command, o *Options) {
 	// Write the ciphertext.
 	ciphertextFile := fileWriter(cmd, FilenameDescriptionCipherText, o.OutputFilename, true)
 	ciphertextFile.Write(ciphertext)
+}
+
+func parseKeyFlagFrom(o *Options, flagName, flagValue string) string {
+	keyFilename := o.KeyFilename
+	if keyFilename == "" {
+		keyFilename = flagValue
+	}
+	gotBoth := o.KeyFilename != "" && flagValue != ""
+	bothDiffer := o.KeyFilename != flagValue
+	if gotBoth && bothDiffer {
+		log.Fatalf(`FATAL: conflicting values for "--%v=%v" and "--%v=%v"; omit "--%v" flag.`,
+			flagName, flagValue, FlagNameKey, o.KeyFilename, FlagNameKey)
+	}
+	return keyFilename
 }
 
 func addGenerateCmd(rsaCmd *cobra.Command) {

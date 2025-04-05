@@ -26,7 +26,7 @@ func TestMainHelp(t *testing.T) {
 		encCmd.SetArgs(args)
 		encCmd.SetIn(nil)
 		encCmd.SetOut(buf)
-		main()
+		encCmd.Execute()
 		output := buf.String()
 
 		for _, helpMessage := range helpMessages {
@@ -89,7 +89,7 @@ func TestKnownOutputs(t *testing.T) {
 		encCmd.SetIn(bytes.NewReader(example.input))
 		stdout := new(bytes.Buffer)
 		encCmd.SetOut(stdout)
-		main()
+		encCmd.Execute()
 		actualStdout := stdout.Bytes()
 		if !reflect.DeepEqual(actualStdout, example.output) {
 			t.Fatalf("unexpected STDOUT for example #%v (args=%#v, see input):"+
@@ -192,7 +192,7 @@ func TestFileIO(t *testing.T) {
 				encCmd.SetOut(stdout)
 			}
 
-			main()
+			encCmd.Execute()
 
 			// Ensure the output is as expected.
 			var output []byte

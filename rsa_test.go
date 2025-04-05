@@ -54,7 +54,7 @@ func TestRsaGenerate(t *testing.T) {
 		if m == nil {
 			t.Fatalf("example %v: output does not match \n%v\n%v", i, outputRegex, string(actualStdout))
 		} else {
-			log.Printf("OK:\npriv=%v\npub=%v", m[0][1], m[0][2])
+			// log.Printf("OK:\npriv=%v\npub=%v", m[0][1], m[0][2])
 			nonBase64 := regexp.MustCompile(`[^A-Za-z0-9+/=]`)
 			privDataLen := len(mustDecodeBase64(nonBase64.ReplaceAllString(m[0][1], "")))
 			pubDataLen := len(mustDecodeBase64(nonBase64.ReplaceAllString(m[0][2], "")))
@@ -103,7 +103,7 @@ func TestRsaEncryptionEndToEnd(t *testing.T) {
 		encryptStdout := &bytes.Buffer{}
 		encryptCmd.SetOut(encryptStdout)
 		if err := encryptCmd.Execute(); err != nil {
-			log.Fatalf("example %v while encrypting: %v", i, err)
+			t.Fatalf("example %v while encrypting: %v", i, err)
 		}
 		ciphertext := encryptStdout.Bytes()
 
@@ -114,7 +114,7 @@ func TestRsaEncryptionEndToEnd(t *testing.T) {
 		decryptStdout := &bytes.Buffer{}
 		decryptCmd.SetOut(decryptStdout)
 		if err := decryptCmd.Execute(); err != nil {
-			log.Fatalf("example %v while decrypting: %v", i, err)
+			t.Fatalf("example %v while decrypting: %v", i, err)
 		}
 
 		decrypted := decryptStdout.String()

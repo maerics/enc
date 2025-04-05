@@ -76,11 +76,10 @@ func newEncCmd(options *Options) *cobra.Command {
 	return encCmd
 }
 
-var encCmd = newEncCmd(getDefaultOptions())
-
 func main() {
 	log.SetFlags(0)
 	// Execute the "enc/dec" cmd.
+	encCmd := newEncCmd(getDefaultOptions())
 	if err := encCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

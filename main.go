@@ -16,6 +16,15 @@ const (
 	DecodeActName = "Decode"
 
 	DefaultStreamName = "-"
+
+	FilenameDescriptionPrivateKey = "private key"
+	FilenameDescriptionPublicKey  = "public key"
+	FilenameDescriptionCipherText = "cipher text"
+	FilenameDescriptionPlainText  = "plain text"
+
+	FlagNamePrivateKey = "private-key"
+	FlagNamePublicKey  = "public-key"
+	FlagNameKey        = "key"
 )
 
 type Options struct {
@@ -71,6 +80,7 @@ func newEncCmd(options *Options) *cobra.Command {
 	// Add the subcommands
 	addStreamingCodecs(encCmd, options)
 	addBufferedCodecs(encCmd, options)
+	addAesCommands(encCmd, options)
 	addRSACommands(encCmd, options)
 
 	return encCmd

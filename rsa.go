@@ -19,15 +19,6 @@ const (
 	PrivateKeyPEMType          = "PRIVATE KEY"
 	PublicKeyPEMType           = "PUBLIC KEY"
 	EncryptedPrivateKeyPEMType = "ENCRYPTED PRIVATE KEY"
-
-	FilenameDescriptionPrivateKey = "private key"
-	FilenameDescriptionPublicKey  = "public key"
-	FilenameDescriptionCipherText = "cipher text"
-	FilenameDescriptionPlainText  = "plain text"
-
-	FlagNamePrivateKey = "private-key"
-	FlagNamePublicKey  = "public-key"
-	FlagNameKey        = "key"
 )
 
 var (
@@ -51,10 +42,10 @@ func addRSACommands(rootCmd *cobra.Command, o *Options) {
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 			if o.Decode {
-				decrypt(cmd, o)
+				rsaDecrypt(cmd, o)
 				return
 			}
-			encrypt(cmd, o)
+			rsaEncrypt(cmd, o)
 		},
 	}
 
@@ -72,7 +63,7 @@ func addRSACommands(rootCmd *cobra.Command, o *Options) {
 	rootCmd.AddCommand(rsaCmd)
 }
 
-func decrypt(cmd *cobra.Command, o *Options) {
+func rsaDecrypt(cmd *cobra.Command, o *Options) {
 	// Warn the user if the public key argument was provided.
 	if o.PublicKeyFilename != "" {
 		log.Printf("WARNING: ignoring irrelevant %q flag", "--"+FlagNamePublicKey)
@@ -111,7 +102,7 @@ func decrypt(cmd *cobra.Command, o *Options) {
 	plaintextFile.Write(plaintext)
 }
 
-func encrypt(cmd *cobra.Command, o *Options) {
+func rsaEncrypt(cmd *cobra.Command, o *Options) {
 	// Warn the user if the private key argument was provided.
 	if o.PrivateKeyFilename != "" {
 		log.Printf("WARNING: ignoring irrelevant %q flag", "--"+FlagNamePrivateKey)

@@ -70,7 +70,7 @@ func addStreamingCodecs(rootCmd *cobra.Command, options *Options) {
 	}
 }
 
-func transcodeStreaming(cmd *cobra.Command, codec StreamingCodec, o *Options) func(*cobra.Command, []string) {
+func transcodeStreaming(_ *cobra.Command, codec StreamingCodec, o *Options) func(*cobra.Command, []string) {
 	return func(c *cobra.Command, s []string) {
 		ins := c.InOrStdin()
 		outs := wnc(c.OutOrStdout())

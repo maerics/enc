@@ -47,7 +47,8 @@ type Options struct {
 	PrivateKeyFilename string
 	PublicKeyFilename  string
 	KeyFilename        string
-	Label              string
+
+	AdditionalDataFilename string
 }
 
 func newEncCmd(options *Options) *cobra.Command {

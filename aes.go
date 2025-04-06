@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"io"
 	"log"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -31,6 +32,8 @@ func addAesCommands(rootCmd *cobra.Command, o *Options) {
 
 	aesCmd.Flags().BoolVarP(&o.Decode, "decrypt", "d", o.Decode, "AES decrypt")
 	aesCmd.Flags().StringVarP(&o.KeyFilename, "key", "k", "", "key filename")
+	aesCmd.Flags().StringVarP(&o.AdditionalDataFilename, "additional-data", "", "",
+		"additional data for AEAD mode")
 
 	rootCmd.AddCommand(aesCmd)
 }
@@ -62,7 +65,8 @@ func aesDecrypt(cmd *cobra.Command, o *Options) {
 	}
 	nonceSize := aesgcm.NonceSize()
 	nonce := ciphertext[:nonceSize]
-	plaintext, err := aesgcm.Open(nil, nonce, ciphertext[nonceSize:], nil)
+	additionalData := readAdditionalData(o.AdditionalDataFilename)
+	plaintext, err := aesgcm.Open(nil, nonce, ciphertext[nonceSize:], additionalData)
 	if err != nil {
 		log.Fatalf("FATAL: %v", err)
 	}
@@ -102,11 +106,23 @@ func aesEncrypt(cmd *cobra.Command, o *Options) {
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		log.Fatalf("FATAL: failed to generate nonce of size %v: %v", nonceSize, err)
 	}
-	ciphertext := aesgcm.Seal(nil, nonce, plaintext, nil)
+	additionalData := readAdditionalData(o.AdditionalDataFilename)
+	ciphertext := aesgcm.Seal(nil, nonce, plaintext, additionalData)
 	if _, err := ciphertextWriter.Write(nonce); err != nil {
 		log.Fatalf("FATAL: failed to write nonce: %v", err)
 	}
 	if _, err := ciphertextWriter.Write(ciphertext); err != nil {
 		log.Fatalf("FATAL: failed to write ciphertext: %v", err)
 	}
+}
+
+func readAdditionalData(filename string) []byte {
+	if filename != "" {
+		bs, err := os.ReadFile(filename)
+		if err != nil {
+			log.Fatalf("FATAL: failed to read additional data from %q: %v", filename, err)
+		}
+		return bs
+	}
+	return nil
 }

@@ -22,11 +22,11 @@ func TestMainHelp(t *testing.T) {
 
 	for _, args := range helpArgs {
 		buf := &bytes.Buffer{}
-		encCmd = newEncCmd(getDefaultOptions())
+		encCmd := newEncCmd(getDefaultOptions())
 		encCmd.SetArgs(args)
 		encCmd.SetIn(nil)
 		encCmd.SetOut(buf)
-		main()
+		encCmd.Execute()
 		output := buf.String()
 
 		for _, helpMessage := range helpMessages {
@@ -84,12 +84,12 @@ func TestKnownOutputs(t *testing.T) {
 		{[]string{"xor", "--key=secret"}, []byte("Attack!\n"), []byte{0x32, 0x11, 0x17, 0x13, 0x6, 0x1f, 0x52, 0x6f}, nil},
 		{[]string{"xor", "-D", "--key=secret"}, []byte([]byte{0x32, 0x11, 0x17, 0x13, 0x6, 0x1f, 0x52, 0x6f}), []byte("Attack!\n"), nil},
 	} {
-		encCmd = newEncCmd(getDefaultOptions())
+		encCmd := newEncCmd(getDefaultOptions())
 		encCmd.SetArgs(example.args)
 		encCmd.SetIn(bytes.NewReader(example.input))
 		stdout := new(bytes.Buffer)
 		encCmd.SetOut(stdout)
-		main()
+		encCmd.Execute()
 		actualStdout := stdout.Bytes()
 		if !reflect.DeepEqual(actualStdout, example.output) {
 			t.Fatalf("unexpected STDOUT for example #%v (args=%#v, see input):"+
@@ -178,7 +178,7 @@ func TestFileIO(t *testing.T) {
 			}
 
 			// Run the test.
-			encCmd = newEncCmd(getDefaultOptions())
+			encCmd := newEncCmd(getDefaultOptions())
 			encCmd.SetArgs(args)
 
 			var stdin io.Reader
@@ -192,7 +192,7 @@ func TestFileIO(t *testing.T) {
 				encCmd.SetOut(stdout)
 			}
 
-			main()
+			encCmd.Execute()
 
 			// Ensure the output is as expected.
 			var output []byte

@@ -31,7 +31,7 @@ func addAesCommands(rootCmd *cobra.Command, o *Options) {
 	}
 
 	aesCmd.Flags().BoolVarP(&o.Decode, "decrypt", "d", o.Decode, "AES decrypt")
-	aesCmd.Flags().StringVarP(&o.KeyFilename, "key", "k", "", "key filename")
+	aesCmd.Flags().StringVarP(&o.KeyFilename, FlagNameKey, "k", "", "key filename")
 	aesCmd.Flags().StringVarP(&o.AdditionalDataFilename, "additional-data", "", "",
 		"additional data for AEAD mode")
 
@@ -40,7 +40,10 @@ func addAesCommands(rootCmd *cobra.Command, o *Options) {
 
 func aesDecrypt(cmd *cobra.Command, o *Options) {
 	// Read the decryption key.
-	keyReader := fileReader(cmd, "key", o.KeyFilename, false)
+	if o.KeyFilename == "" {
+		log.Fatalf(`FATAL: missing required "--%v" flag`, FlagNameKey)
+	}
+	keyReader := fileReader(cmd, FlagNameKey, o.KeyFilename, false)
 	key, err := io.ReadAll(keyReader)
 	if err != nil {
 		log.Fatalf("FATAL: failed to read all key bytes: %v", err)
@@ -78,7 +81,10 @@ func aesDecrypt(cmd *cobra.Command, o *Options) {
 
 func aesEncrypt(cmd *cobra.Command, o *Options) {
 	// Read the encryption key.
-	keyReader := fileReader(cmd, "key", o.KeyFilename, false)
+	if o.KeyFilename == "" {
+		log.Fatalf(`FATAL: missing required "--%v" flag`, FlagNameKey)
+	}
+	keyReader := fileReader(cmd, FlagNameKey, o.KeyFilename, false)
 	key, err := io.ReadAll(keyReader)
 	if err != nil {
 		log.Fatalf("FATAL: failed to read all key bytes: %v", err)

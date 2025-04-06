@@ -1,5 +1,5 @@
 enc
 dec
-dist
+dist/
 *.dat
 *.key

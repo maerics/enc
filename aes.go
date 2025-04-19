@@ -12,14 +12,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type AESOptions struct {
-	*Options
-
-	Mode aesMode
-}
-
-func addAesCommands(rootCmd *cobra.Command, oo *Options) {
-	o := &AESOptions{Options: oo, Mode: aesModeGCMAEAD}
+func addAesCommands(rootCmd *cobra.Command, o *Options) {
+	o.AESMode = aesModeGCMAEAD
 	short := "Encrypt data using AES"
 	if o.Decode {
 		short = "Decrypt data using AES"
@@ -49,12 +43,12 @@ func addAesCommands(rootCmd *cobra.Command, oo *Options) {
 	// --cbc (shorthand for "--mode=cbc")
 	// --ecb (shorthand for "--mode=ecb")
 	// --gcm-aead (shorthand for "--mode=gcm-aead" [default])
-	aesCmd.Flags().Var(&o.Mode, "mode", "encryption mode, allowed: "+aesModesString)
+	aesCmd.Flags().Var(&o.AESMode, "mode", "encryption mode, allowed: "+aesModesString)
 
 	rootCmd.AddCommand(aesCmd)
 }
 
-func aesDecrypt(cmd *cobra.Command, o *AESOptions) {
+func aesDecrypt(cmd *cobra.Command, o *Options) {
 	// Read the decryption key.
 	if o.KeyFilename == "" {
 		log.Fatalf(`FATAL: missing required "--%v" flag`, FlagNameKey)
@@ -95,7 +89,7 @@ func aesDecrypt(cmd *cobra.Command, o *AESOptions) {
 
 }
 
-func aesEncrypt(cmd *cobra.Command, o *AESOptions) {
+func aesEncrypt(cmd *cobra.Command, o *Options) {
 	// Read the encryption key.
 	if o.KeyFilename == "" {
 		log.Fatalf(`FATAL: missing required "--%v" flag`, FlagNameKey)
@@ -109,8 +103,8 @@ func aesEncrypt(cmd *cobra.Command, o *AESOptions) {
 	if err != nil {
 		log.Fatalf("FATAL: failed to create AES cipher: %v", err)
 	}
-	if o.Mode != aesModeGCMAEAD {
-		log.Fatalf("AES mode %q: not implemented", o.Mode)
+	if o.AESMode != aesModeGCMAEAD {
+		log.Fatalf("AES mode %q: not implemented", o.AESMode)
 	}
 
 	// Read the plaintext.

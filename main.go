@@ -49,6 +49,8 @@ type Options struct {
 	KeyFilename        string
 
 	AdditionalDataFilename string
+
+	AESMode aesMode
 }
 
 func newEncCmd(options *Options) *cobra.Command {

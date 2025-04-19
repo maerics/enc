@@ -1,10 +1,16 @@
-test:
+test: fmt vet
 	go test ./...
 
-build:
+fmt:
+	go fmt ./...
+
+vet:
+	go vet ./...
+
+build: test
 	go build -o ./enc *.go
 
-release-check:
+release-check: test
 	goreleaser check
 
 local-release: release-check clean

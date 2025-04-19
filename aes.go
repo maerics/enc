@@ -4,6 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -11,7 +12,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func addAesCommands(rootCmd *cobra.Command, o *Options) {
+type AESOptions struct {
+	*Options
+
+	Mode aesMode
+}
+
+func addAesCommands(rootCmd *cobra.Command, oo *Options) {
+	o := &AESOptions{Options: oo, Mode: aesModeGCMAEAD}
 	short := "Encrypt data using AES"
 	if o.Decode {
 		short = "Decrypt data using AES"
@@ -30,15 +38,23 @@ func addAesCommands(rootCmd *cobra.Command, o *Options) {
 		},
 	}
 
-	aesCmd.Flags().BoolVarP(&o.Decode, "decrypt", "d", o.Decode, "AES decrypt")
+	aesCmd.Flags().BoolVarP(&o.Decode, "decrypt", "d", o.Decode, "decrypt")
 	aesCmd.Flags().StringVarP(&o.KeyFilename, FlagNameKey, "k", "", "key filename")
 	aesCmd.Flags().StringVarP(&o.AdditionalDataFilename, "additional-data", "", "",
-		"additional data for AEAD mode")
+		fmt.Sprintf("additional data for %q mode", aesModeGCMAEAD))
+
+	// TODO
+	// --mode={block,cbc,ecb,gcm-aead,...}
+	// --block (shorthand for "--mode=block")
+	// --cbc (shorthand for "--mode=cbc")
+	// --ecb (shorthand for "--mode=ecb")
+	// --gcm-aead (shorthand for "--mode=gcm-aead" [default])
+	aesCmd.Flags().Var(&o.Mode, "mode", "encryption mode, allowed: "+aesModesString)
 
 	rootCmd.AddCommand(aesCmd)
 }
 
-func aesDecrypt(cmd *cobra.Command, o *Options) {
+func aesDecrypt(cmd *cobra.Command, o *AESOptions) {
 	// Read the decryption key.
 	if o.KeyFilename == "" {
 		log.Fatalf(`FATAL: missing required "--%v" flag`, FlagNameKey)
@@ -79,7 +95,7 @@ func aesDecrypt(cmd *cobra.Command, o *Options) {
 
 }
 
-func aesEncrypt(cmd *cobra.Command, o *Options) {
+func aesEncrypt(cmd *cobra.Command, o *AESOptions) {
 	// Read the encryption key.
 	if o.KeyFilename == "" {
 		log.Fatalf(`FATAL: missing required "--%v" flag`, FlagNameKey)
@@ -92,6 +108,9 @@ func aesEncrypt(cmd *cobra.Command, o *Options) {
 	aesCipher, err := aes.NewCipher(key)
 	if err != nil {
 		log.Fatalf("FATAL: failed to create AES cipher: %v", err)
+	}
+	if o.Mode != aesModeGCMAEAD {
+		log.Fatalf("AES mode %q: not implemented", o.Mode)
 	}
 
 	// Read the plaintext.

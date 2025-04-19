@@ -63,12 +63,6 @@ func newEncCmd(options *Options) *cobra.Command {
 	encCmd.PersistentFlags().BoolVarP(&options.Decode,
 		"decode", "D", options.Decode,
 		"decode or decrypt input on stdin")
-	encCmd.PersistentFlags().BoolVarP(&options.IgnoreWhitespace,
-		"ignore-whitespace", "w", options.IgnoreWhitespace,
-		"ignore whitespace characters when decoding")
-	encCmd.PersistentFlags().BoolVarP(&options.AppendNewline,
-		"append-newline", "n", options.AppendNewline,
-		"append a trailing newline to the output")
 	encCmd.PersistentFlags().StringVarP(&options.InputFilename,
 		"input-file", "i", options.InputFilename,
 		"the input filename, omit or use \"-\" for stdin")

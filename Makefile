@@ -7,8 +7,19 @@ fmt:
 vet:
 	go vet ./...
 
+BUILD_VERSION = $(shell git describe --exact-match --tags)
+BUILD_COMMIT = $(shell git rev-parse head)
+BUILD_TIMESTAMP = $(shell date '+%s')
+BUILD_MODIFIED = $(shell if [[ "$\(git status -s\)" != "" ]]; then echo true; else echo false; fi)
 build: test
-	go build -o ./enc *.go
+	go build \
+		-ldflags " \
+			-X 'main.Version=$(BUILD_VERSION)' \
+			-X 'main.Commit=$(BUILD_COMMIT)' \
+			-X 'main.Timestamp=$(BUILD_TIMESTAMP)' \
+			-X 'main.Modified=$(BUILD_MODIFIED)' \
+		" \
+	-o ./enc *.go
 
 release-check: test
 	goreleaser check

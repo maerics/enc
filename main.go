@@ -1,9 +1,14 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -53,11 +58,34 @@ type Options struct {
 	AESMode aesMode
 }
 
+// Linked at build time.
+var Commit, Version, Timestamp, Modified string
+
 func newEncCmd(options *Options) *cobra.Command {
+	printVersion := false
+
 	encCmd := &cobra.Command{
-		Use: options.CmdName, Short: "Transcode various formats between streams or files.",
+		Use:               options.CmdName,
+		Short:             "Transcode various formats between streams or files.",
 		CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
 	}
+
+	versionCmd := &cobra.Command{
+		Use:               "version",
+		Aliases:           []string{"v"},
+		Short:             "Print the current version",
+		CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
+		Run: func(cmd *cobra.Command, args []string) {
+			bs, err := json.MarshalIndent(parseVersionInfo(), "", "  ")
+			if err != nil {
+				panic(err)
+			}
+			fmt.Println(string(bs))
+		},
+	}
+
+	encCmd.AddCommand(versionCmd)
+	encCmd.Flags().BoolVarP(&printVersion, "version", "v", false, "Print the current version")
 
 	// Setup global flags.
 	encCmd.PersistentFlags().BoolVarP(&options.Decode,
@@ -79,6 +107,14 @@ func newEncCmd(options *Options) *cobra.Command {
 	addBufferedCodecs(encCmd, options)
 	addAesCommands(encCmd, options)
 	addRSACommands(encCmd, options)
+
+	encCmd.Run = func(cmd *cobra.Command, args []string) {
+		if printVersion {
+			fmt.Println(getVersionString())
+		} else {
+			encCmd.Help()
+		}
+	}
 
 	return encCmd
 }
@@ -123,4 +159,52 @@ func setFilenameOptions(cmd *cobra.Command, options *Options) {
 			cmd.SetOut(out)
 		}
 	}
+}
+
+type versionInfo struct {
+	Version       string    `json:"version,omitempty"`
+	Commit        string    `json:"commit,omitempty"`
+	Timestamp     time.Time `json:"timestamp"`
+	TimestampUnix int64     `json:"-"`
+	Modified      bool      `json:"modified,omitempty"`
+}
+
+func parseVersionInfo() versionInfo {
+	unixTime := (func() int64 {
+		if regexp.MustCompile(`^\d+$`).MatchString(Timestamp) {
+			if t, err := strconv.ParseInt(Timestamp, 10, 63); err != nil {
+				panic(err)
+			} else {
+				return t
+			}
+		}
+		return 0
+	})()
+
+	return versionInfo{
+		Version:       Version,
+		Commit:        Commit,
+		Timestamp:     time.Unix(unixTime, 0).UTC(),
+		TimestampUnix: unixTime,
+		Modified:      Modified != "",
+	}
+}
+
+func getVersionString() string {
+	versionInfo := parseVersionInfo()
+
+	if Version == "" {
+		return "(unknown)"
+	}
+
+	message := fmt.Sprintf("%v, commit=%v, timestamp=%v",
+		versionInfo.Version, versionInfo.Commit,
+		versionInfo.Timestamp.Format(time.RFC3339),
+	)
+
+	if versionInfo.Modified {
+		message += ", modified=true"
+	}
+
+	return message
 }

@@ -73,11 +73,11 @@ func newEncCmd(options *Options) *cobra.Command {
 		Short:             "Print the current version",
 		CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
 		Run: func(cmd *cobra.Command, args []string) {
-			bs, err := json.MarshalIndent(parseVersionInfo(), "", "  ")
-			if err != nil {
+			if bs, err := json.MarshalIndent(parseVersionInfo(), "", "  "); err != nil {
 				panic(err)
+			} else {
+				fmt.Println(string(bs))
 			}
-			fmt.Println(string(bs))
 		},
 	}
 
@@ -179,9 +179,7 @@ func getVersionString() string {
 		return "(unknown)"
 	}
 
-	message := fmt.Sprintf("v%v, commit=%v, timestamp=%v",
+	return fmt.Sprintf("v%v, commit=%v, timestamp=%v",
 		versionInfo.Version, versionInfo.Commit, versionInfo.Timestamp,
 	)
-
-	return message
 }

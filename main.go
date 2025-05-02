@@ -6,9 +6,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strconv"
-	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -59,7 +56,7 @@ type Options struct {
 }
 
 // Linked at build time.
-var Commit, Version, Timestamp, Modified string
+var version, commit, date string
 
 func newEncCmd(options *Options) *cobra.Command {
 	printVersion := false
@@ -162,49 +159,29 @@ func setFilenameOptions(cmd *cobra.Command, options *Options) {
 }
 
 type versionInfo struct {
-	Version       string    `json:"version,omitempty"`
-	Commit        string    `json:"commit,omitempty"`
-	Timestamp     time.Time `json:"timestamp"`
-	TimestampUnix int64     `json:"-"`
-	Modified      bool      `json:"modified,omitempty"`
+	Version   string `json:"version,omitempty"`
+	Commit    string `json:"commit,omitempty"`
+	Timestamp string `json:"timestamp"`
 }
 
 func parseVersionInfo() versionInfo {
-	unixTime := (func() int64 {
-		if regexp.MustCompile(`^\d+$`).MatchString(Timestamp) {
-			if t, err := strconv.ParseInt(Timestamp, 10, 63); err != nil {
-				panic(err)
-			} else {
-				return t
-			}
-		}
-		return 0
-	})()
-
 	return versionInfo{
-		Version:       Version,
-		Commit:        Commit,
-		Timestamp:     time.Unix(unixTime, 0).UTC(),
-		TimestampUnix: unixTime,
-		Modified:      Modified != "",
+		Version:   version,
+		Commit:    commit,
+		Timestamp: date,
 	}
 }
 
 func getVersionString() string {
 	versionInfo := parseVersionInfo()
 
-	if Version == "" {
+	if version == "" {
 		return "(unknown)"
 	}
 
 	message := fmt.Sprintf("%v, commit=%v, timestamp=%v",
-		versionInfo.Version, versionInfo.Commit,
-		versionInfo.Timestamp.Format(time.RFC3339),
+		versionInfo.Version, versionInfo.Commit, versionInfo.Timestamp,
 	)
-
-	if versionInfo.Modified {
-		message += ", modified=true"
-	}
 
 	return message
 }

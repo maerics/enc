@@ -14,10 +14,9 @@ BUILD_MODIFIED = $(shell if [[ "$\(git status -s\)" != "" ]]; then echo true; el
 build: test
 	go build \
 		-ldflags " \
-			-X 'main.Version=$(BUILD_VERSION)' \
-			-X 'main.Commit=$(BUILD_COMMIT)' \
-			-X 'main.Timestamp=$(BUILD_TIMESTAMP)' \
-			-X 'main.Modified=$(BUILD_MODIFIED)' \
+			-X 'main.version=$(BUILD_VERSION)' \
+			-X 'main.commit=$(BUILD_COMMIT)' \
+			-X 'main.date=$(BUILD_TIMESTAMP)' \
 		" \
 	-o ./enc *.go
 

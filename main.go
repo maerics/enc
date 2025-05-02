@@ -179,7 +179,7 @@ func getVersionString() string {
 		return "(unknown)"
 	}
 
-	message := fmt.Sprintf("%v, commit=%v, timestamp=%v",
+	message := fmt.Sprintf("v%v, commit=%v, timestamp=%v",
 		versionInfo.Version, versionInfo.Commit, versionInfo.Timestamp,
 	)
 

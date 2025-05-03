@@ -69,9 +69,30 @@ func aesDecrypt(cmd *cobra.Command, o *Options) {
 	if err != nil {
 		log.Fatalf("FATAL: failed to read plaintext: %v", err)
 	}
-
-	// AES decrypt.
 	plaintextWriter := cmd.OutOrStdout()
+
+	switch o.AESMode {
+	case aesModeBlock:
+		aesDecryptBlock(aesCipher, ciphertext, plaintextWriter, o)
+	case aesModeGCMAEAD:
+		aesDecryptGCMAEAD(aesCipher, ciphertext, plaintextWriter, o)
+	default:
+		log.Fatalf("AES mode %q: not implemented", o.AESMode)
+	}
+}
+
+func aesDecryptBlock(aesCipher cipher.Block, ciphertext []byte, plaintextWriter io.Writer, _ *Options) {
+	if aesCipher.BlockSize()%len(ciphertext) != 0 {
+		log.Fatalf("aes/encrypt: Key size %vb != input size %vb", aesCipher.BlockSize(), len(ciphertext))
+	}
+	aesCipher.Decrypt(ciphertext, ciphertext)
+	if _, err := plaintextWriter.Write(ciphertext); err != nil {
+		log.Fatalf("FATAL: failed to write ciphertext: %v", err)
+	}
+}
+
+func aesDecryptGCMAEAD(aesCipher cipher.Block, ciphertext []byte, plaintextWriter io.Writer, o *Options) {
+	// AES decrypt.
 	aesgcm, err := cipher.NewGCM(aesCipher)
 	if err != nil {
 		log.Fatalf("FATAL: failed to create new GCM AEAD: %v", err)
@@ -86,7 +107,6 @@ func aesDecrypt(cmd *cobra.Command, o *Options) {
 	if _, err := plaintextWriter.Write(plaintext); err != nil {
 		log.Fatalf("FATAL: failed to write plaintext: %v", err)
 	}
-
 }
 
 func aesEncrypt(cmd *cobra.Command, o *Options) {
@@ -103,9 +123,6 @@ func aesEncrypt(cmd *cobra.Command, o *Options) {
 	if err != nil {
 		log.Fatalf("FATAL: failed to create AES cipher: %v", err)
 	}
-	if o.AESMode != aesModeGCMAEAD {
-		log.Fatalf("AES mode %q: not implemented", o.AESMode)
-	}
 
 	// Read the plaintext.
 	plaintextReader := cmd.InOrStdin()
@@ -114,8 +131,28 @@ func aesEncrypt(cmd *cobra.Command, o *Options) {
 		log.Fatalf("FATAL: failed to read plaintext: %v", err)
 	}
 
-	// AES encrypt.
 	ciphertextWriter := cmd.OutOrStdout()
+	switch o.AESMode {
+	case aesModeBlock:
+		aesEncryptBlock(aesCipher, plaintext, ciphertextWriter, o)
+	case aesModeGCMAEAD:
+		aesEncryptGCMAEAD(aesCipher, plaintext, ciphertextWriter, o)
+	default:
+		log.Fatalf("AES mode %q: not implemented", o.AESMode)
+	}
+}
+
+func aesEncryptBlock(aesCipher cipher.Block, plaintext []byte, ciphertextWriter io.Writer, _ *Options) {
+	if aesCipher.BlockSize()%len(plaintext) != 0 {
+		log.Fatalf("aes/encrypt: key size %vb != input size %vb", aesCipher.BlockSize(), len(plaintext))
+	}
+	aesCipher.Encrypt(plaintext, plaintext)
+	if _, err := ciphertextWriter.Write(plaintext); err != nil {
+		log.Fatalf("FATAL: failed to write ciphertext: %v", err)
+	}
+}
+
+func aesEncryptGCMAEAD(aesCipher cipher.Block, plaintext []byte, ciphertextWriter io.Writer, o *Options) {
 	aesgcm, err := cipher.NewGCM(aesCipher)
 	if err != nil {
 		log.Fatalf("FATAL: failed to create new GCM AEAD: %v", err)

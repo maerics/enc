@@ -82,7 +82,7 @@ func newEncCmd(options *Options) *cobra.Command {
 	}
 
 	encCmd.AddCommand(versionCmd)
-	encCmd.Flags().BoolVarP(&printVersion, "version", "v", false, "Print the current version")
+	encCmd.Flags().BoolVarP(&printVersion, "version", "v", false, "print the current version")
 
 	// Setup global flags.
 	encCmd.PersistentFlags().BoolVarP(&options.Decode,

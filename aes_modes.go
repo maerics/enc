@@ -17,7 +17,7 @@ const (
 	aesModeECB     aesMode = "ecb"
 	aesModeGCMAEAD aesMode = "gcm-aead"
 
-	aesModesString = `"block", cbc", "ecb", or "gcm-aead"`
+	aesModesString = `"block", "cbc", "ecb", or "gcm-aead"`
 )
 
 // String is used both by fmt.Print and by Cobra in help text

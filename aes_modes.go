@@ -20,6 +20,15 @@ const (
 	aesModesString = `"block", "cbc", "ecb", or "gcm-aead"`
 )
 
+var (
+	AllAesModes = []aesMode{
+		aesModeBlock,
+		aesModeCBC,
+		aesModeECB,
+		aesModeGCMAEAD,
+	}
+)
+
 // String is used both by fmt.Print and by Cobra in help text
 func (e *aesMode) String() string {
 	return string(*e)

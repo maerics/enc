@@ -49,6 +49,17 @@ func addAesCommands(rootCmd *cobra.Command, o *Options) {
 }
 
 func aesDecrypt(cmd *cobra.Command, o *Options) {
+	// Determine the encryption mode.
+	var decryptFunc func(cipher.Block, []byte, io.Writer, *Options)
+	switch o.AESMode {
+	case aesModeBlock:
+		decryptFunc = aesDecryptBlock
+	case aesModeGCMAEAD:
+		decryptFunc = aesDecryptGCMAEAD
+	default:
+		log.Fatalf("FATAL: aes mode %q not implemented", o.AESMode)
+	}
+
 	// Read the decryption key.
 	if o.KeyFilename == "" {
 		log.Fatalf(`FATAL: missing required "--%v" flag`, FlagNameKey)
@@ -58,6 +69,8 @@ func aesDecrypt(cmd *cobra.Command, o *Options) {
 	if err != nil {
 		log.Fatalf("FATAL: failed to read all key bytes: %v", err)
 	}
+
+	// Generate the cipher.
 	aesCipher, err := aes.NewCipher(key)
 	if err != nil {
 		log.Fatalf("FATAL: failed to create AES cipher: %v", err)
@@ -69,16 +82,10 @@ func aesDecrypt(cmd *cobra.Command, o *Options) {
 	if err != nil {
 		log.Fatalf("FATAL: failed to read plaintext: %v", err)
 	}
-	plaintextWriter := cmd.OutOrStdout()
 
-	switch o.AESMode {
-	case aesModeBlock:
-		aesDecryptBlock(aesCipher, ciphertext, plaintextWriter, o)
-	case aesModeGCMAEAD:
-		aesDecryptGCMAEAD(aesCipher, ciphertext, plaintextWriter, o)
-	default:
-		log.Fatalf("AES mode %q: not implemented", o.AESMode)
-	}
+	// Decrypt and write the output.
+	plaintextWriter := cmd.OutOrStdout()
+	decryptFunc(aesCipher, ciphertext, plaintextWriter, o)
 }
 
 func aesDecryptBlock(aesCipher cipher.Block, ciphertext []byte, plaintextWriter io.Writer, _ *Options) {
@@ -110,6 +117,17 @@ func aesDecryptGCMAEAD(aesCipher cipher.Block, ciphertext []byte, plaintextWrite
 }
 
 func aesEncrypt(cmd *cobra.Command, o *Options) {
+	// Determine the encryption mode.
+	var encryptFunc func(cipher.Block, []byte, io.Writer, *Options)
+	switch o.AESMode {
+	case aesModeBlock:
+		encryptFunc = aesEncryptBlock
+	case aesModeGCMAEAD:
+		encryptFunc = aesEncryptGCMAEAD
+	default:
+		log.Fatalf("FATAL: aes mode %q not implemented", o.AESMode)
+	}
+
 	// Read the encryption key.
 	if o.KeyFilename == "" {
 		log.Fatalf(`FATAL: missing required "--%v" flag`, FlagNameKey)
@@ -119,6 +137,8 @@ func aesEncrypt(cmd *cobra.Command, o *Options) {
 	if err != nil {
 		log.Fatalf("FATAL: failed to read all key bytes: %v", err)
 	}
+
+	// Generate the cipher.
 	aesCipher, err := aes.NewCipher(key)
 	if err != nil {
 		log.Fatalf("FATAL: failed to create AES cipher: %v", err)
@@ -131,15 +151,9 @@ func aesEncrypt(cmd *cobra.Command, o *Options) {
 		log.Fatalf("FATAL: failed to read plaintext: %v", err)
 	}
 
+	// Encrypt and write the output.
 	ciphertextWriter := cmd.OutOrStdout()
-	switch o.AESMode {
-	case aesModeBlock:
-		aesEncryptBlock(aesCipher, plaintext, ciphertextWriter, o)
-	case aesModeGCMAEAD:
-		aesEncryptGCMAEAD(aesCipher, plaintext, ciphertextWriter, o)
-	default:
-		log.Fatalf("AES mode %q: not implemented", o.AESMode)
-	}
+	encryptFunc(aesCipher, plaintext, ciphertextWriter, o)
 }
 
 func aesEncryptBlock(aesCipher cipher.Block, plaintext []byte, ciphertextWriter io.Writer, _ *Options) {

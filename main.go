@@ -40,8 +40,9 @@ type Options struct {
 	CheckVersion     *uint8
 	CheckVersionFlag string
 
-	Key    string
-	Offset uint8
+	Key      string
+	KeyBytes []byte
+	Offset   uint8
 
 	InputFilename  string
 	OutputFilename string
@@ -65,6 +66,8 @@ func newEncCmd(options *Options) *cobra.Command {
 		Use:               options.CmdName,
 		Short:             "Transcode various formats between streams or files.",
 		CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
+		SilenceErrors:     true,
+		SilenceUsage:      true,
 	}
 
 	versionCmd := &cobra.Command{
@@ -72,12 +75,13 @@ func newEncCmd(options *Options) *cobra.Command {
 		Aliases:           []string{"v"},
 		Short:             "Print the current version",
 		CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
-		Run: func(cmd *cobra.Command, args []string) {
-			if bs, err := json.MarshalIndent(parseVersionInfo(), "", "  "); err != nil {
-				panic(err)
-			} else {
-				fmt.Println(string(bs))
+		RunE: func(cmd *cobra.Command, args []string) error {
+			bs, err := json.MarshalIndent(parseVersionInfo(), "", "  ")
+			if err != nil {
+				return err
 			}
+			fmt.Println(string(bs))
+			return nil
 		},
 	}
 
@@ -95,8 +99,8 @@ func newEncCmd(options *Options) *cobra.Command {
 		"output-file", "o", options.OutputFilename,
 		"the output filename, omit or use \"-\" for stdout")
 
-	encCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
-		setFilenameOptions(cmd, options)
+	encCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		return setFilenameOptions(cmd, options)
 	}
 
 	// Add the subcommands
@@ -118,10 +122,8 @@ func newEncCmd(options *Options) *cobra.Command {
 
 func main() {
 	log.SetFlags(0)
-	// Execute the "enc/dec" cmd.
-	encCmd := newEncCmd(getDefaultOptions())
-	if err := encCmd.Execute(); err != nil {
-		os.Exit(1)
+	if err := newEncCmd(getDefaultOptions()).Execute(); err != nil {
+		log.Fatalf("FATAL: %v", err)
 	}
 }
 
@@ -137,11 +139,11 @@ func getDefaultOptions() *Options {
 	return options
 }
 
-func setFilenameOptions(cmd *cobra.Command, options *Options) {
+func setFilenameOptions(cmd *cobra.Command, options *Options) error {
 	infilename := options.InputFilename
 	if infilename != "" && infilename != DefaultStreamName {
 		if in, err := os.Open(infilename); err != nil {
-			log.Fatalf("FATAL: failed to open input file %q for reading: %v", infilename, err)
+			return fmt.Errorf("failed to open input file %q for reading: %v", infilename, err)
 		} else {
 			cmd.SetIn(in)
 		}
@@ -151,11 +153,12 @@ func setFilenameOptions(cmd *cobra.Command, options *Options) {
 	if outfilename != "" && outfilename != DefaultStreamName {
 		flag := os.O_WRONLY | os.O_CREATE | os.O_EXCL
 		if out, err := os.OpenFile(outfilename, flag, 0600); err != nil {
-			log.Fatalf("FATAL: failed to open output file %q for writing: %v", outfilename, err)
+			return fmt.Errorf("failed to open output file %q for writing: %v", outfilename, err)
 		} else {
 			cmd.SetOut(out)
 		}
 	}
+	return nil
 }
 
 type versionInfo struct {

@@ -133,7 +133,7 @@ func TestRsaExtract(t *testing.T) {
 	}{
 		{generateArgs: []string{"rsa", "generate", "--private-key", privateKeyFilename(0)}},
 		{generateArgs: []string{"rsa", "generate", "-s256", "--private-key", privateKeyFilename(1)}},
-		{generateArgs: []string{"rsa", "generate", "--key-size=2048", "--private-key", privateKeyFilename(2)}},
+		{generateArgs: []string{"rsa", "generate", "--key-size=1024", "--private-key", privateKeyFilename(2)}},
 	} {
 		// Run the "rsa generate" command, store the private key to a file, and the public key in memory.
 		generateCmd := newEncCmd(getDefaultOptions())

@@ -9,8 +9,7 @@ vet:
 
 BUILD_VERSION = $(shell git describe --exact-match --tags)
 BUILD_COMMIT = $(shell git rev-parse head)
-BUILD_TIMESTAMP = $(shell date '+%s')
-BUILD_MODIFIED = $(shell if [[ "$\(git status -s\)" != "" ]]; then echo true; else echo false; fi)
+BUILD_TIMESTAMP = $(shell date -z zulu +'%Y-%m-%dT%H:%M:%SZ')
 build: test
 	go build \
 		-ldflags " \

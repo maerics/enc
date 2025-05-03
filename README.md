@@ -1,11 +1,11 @@
 # enc
 
-Transcode various formats between stdin and stdout.
+Transcode and encrypt using various formats between streams or files.
 
 ## Usage
 
 ```
-Transcode various formats between streams or files.
+Transcode and encrypt using various formats between streams or files.
 
 Usage:
   enc [command]
@@ -36,17 +36,23 @@ Use "enc [command] --help" for more information about a command.
 ```sh
 # Common encodings.
 $ echo OK | enc hex ; echo
-4f4b0a
+# 4f4b0a
 $ echo 4f4b0a | enc -D hex -w
-OK
+# OK
 $ echo QEB NRFZH YOLTK CLU GRJMP LSBO QEB IXWV ALD | enc caesar -r3
-THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG
+# THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG
 $ echo 'Attack!' | enc xor --key=secret | enc base64 ; echo
-MhEXEwYfUm8=
+# MhEXEwYfUm8=
 $ echo MhEXEwYfUm8= | enc -D base64 | enc -D xor --key=secret
-Attack!
+# Attack!
 
 # RSA encryption.
 $ enc rsa generate --private-key=priv.key --public-key=pub.key
-$ echo "Hello, RSA!" | enc rsa --key=pub.key | dec rsa --key=priv.key
+$ echo 'Hello, RSA! 🔐' | enc rsa --key=pub.key | dec rsa --key=priv.key
+# Hello, RSA! 🔐 
+
+# AES Encryption.
+$ openssl rand 32 > aes.key
+$ echo 'Hello, AES! 🔐' | enc aes --key=aes.key | dec aes --key=aes.key
+# Hello, AES! 🔐
 ```

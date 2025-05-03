@@ -64,7 +64,7 @@ func newEncCmd(options *Options) *cobra.Command {
 
 	encCmd := &cobra.Command{
 		Use:               options.CmdName,
-		Short:             "Transcode various formats between streams or files.",
+		Short:             "Transcode and encrypt using various formats between streams or files.",
 		CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
 	}
 
@@ -89,7 +89,7 @@ func newEncCmd(options *Options) *cobra.Command {
 	// Setup global flags.
 	encCmd.PersistentFlags().BoolVarP(&options.Decode,
 		"decode", "D", options.Decode,
-		"decode or decrypt input on stdin")
+		"decode or decrypt input")
 	encCmd.PersistentFlags().StringVarP(&options.InputFilename,
 		"input-file", "i", options.InputFilename,
 		"the input filename, omit or use \"-\" for stdin")
@@ -162,7 +162,7 @@ func setFilenameOptions(cmd *cobra.Command, options *Options) error {
 type versionInfo struct {
 	Version   string `json:"version,omitempty"`
 	Commit    string `json:"commit,omitempty"`
-	Timestamp string `json:"timestamp"`
+	Timestamp string `json:"timestamp,omitempty"`
 }
 
 func parseVersionInfo() versionInfo {
@@ -176,11 +176,10 @@ func parseVersionInfo() versionInfo {
 func getVersionString() string {
 	versionInfo := parseVersionInfo()
 
-	if version == "" {
+	if versionInfo.Version == "" {
 		return "(unknown)"
 	}
 
 	return fmt.Sprintf("v%v, commit=%v, timestamp=%v",
-		versionInfo.Version, versionInfo.Commit, versionInfo.Timestamp,
-	)
+		versionInfo.Version, versionInfo.Commit, versionInfo.Timestamp)
 }

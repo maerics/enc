@@ -66,8 +66,6 @@ func newEncCmd(options *Options) *cobra.Command {
 		Use:               options.CmdName,
 		Short:             "Transcode various formats between streams or files.",
 		CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
-		SilenceErrors:     true,
-		SilenceUsage:      true,
 	}
 
 	versionCmd := &cobra.Command{

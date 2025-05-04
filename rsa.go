@@ -87,7 +87,7 @@ func rsaDecrypt(cmd *cobra.Command, o *Options) {
 	}
 
 	// Encrypt the data.
-	ciphertextReader := fileReader(cmd, FilenameDescriptionCipherText, o.InputFilename, true)
+	ciphertextReader := cmd.InOrStdin()
 	ciphertext, err := io.ReadAll(ciphertextReader)
 	if err != nil {
 		log.Fatalf("FATAL: failed to read ciphertext from stdin: %v", err)
@@ -98,7 +98,7 @@ func rsaDecrypt(cmd *cobra.Command, o *Options) {
 	}
 
 	// Write the plaintext.
-	plaintextFile := fileWriter(cmd, FilenameDescriptionPlainText, o.OutputFilename, true)
+	plaintextFile := cmd.OutOrStdout()
 	plaintextFile.Write(plaintext)
 }
 
@@ -131,7 +131,7 @@ func rsaEncrypt(cmd *cobra.Command, o *Options) {
 	}
 
 	// Encrypt the data.
-	plaintextReader := fileReader(cmd, FilenameDescriptionPlainText, o.InputFilename, true)
+	plaintextReader := cmd.InOrStdin()
 	plaintext, err := io.ReadAll(plaintextReader)
 	if err != nil {
 		log.Fatalf("FATAL: failed to read plaintext from stdin: %v", err)
@@ -142,7 +142,7 @@ func rsaEncrypt(cmd *cobra.Command, o *Options) {
 	}
 
 	// Write the ciphertext.
-	ciphertextFile := fileWriter(cmd, FilenameDescriptionCipherText, o.OutputFilename, true)
+	ciphertextFile := cmd.OutOrStdout()
 	ciphertextFile.Write(ciphertext)
 }
 

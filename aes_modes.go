@@ -1,6 +1,9 @@
 package main
 
-import "errors"
+import (
+	"errors"
+	"strings"
+)
 
 // TODO
 // --mode={block,cbc,ecb,gcm-aead,...}
@@ -13,20 +16,22 @@ type aesMode string
 
 const (
 	aesModeBlock   aesMode = "block"
+	aesModeCTR     aesMode = "ctr"
 	aesModeCBC     aesMode = "cbc"
 	aesModeECB     aesMode = "ecb"
 	aesModeGCMAEAD aesMode = "gcm-aead"
-
-	aesModesString = `"block", "cbc", "ecb", or "gcm-aead"`
 )
 
 var (
-	AllAesModes = []aesMode{
-		aesModeBlock,
-		aesModeCBC,
-		aesModeECB,
-		aesModeGCMAEAD,
+	AllAesModes = []string{
+		string(aesModeBlock),
+		string(aesModeCTR),
+		string(aesModeCBC),
+		string(aesModeECB),
+		string(aesModeGCMAEAD),
 	}
+
+	aesModesString = `"` + strings.Join(AllAesModes, `", "`) + `"`
 )
 
 // String is used both by fmt.Print and by Cobra in help text
@@ -37,7 +42,7 @@ func (e *aesMode) String() string {
 // Set must have pointer receiver so it doesn't change the value of a copy
 func (e *aesMode) Set(v string) error {
 	switch v {
-	case string(aesModeBlock), string(aesModeCBC), string(aesModeECB), string(aesModeGCMAEAD):
+	case string(aesModeBlock), string(aesModeCTR), string(aesModeCBC), string(aesModeECB), string(aesModeGCMAEAD):
 		*e = aesMode(v)
 		return nil
 	default:

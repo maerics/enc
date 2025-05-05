@@ -13,9 +13,9 @@ import (
 
 func addAesCommands(rootCmd *cobra.Command, o *Options) {
 	o.AESMode = aesModeGCMAEAD
-	short := "Encrypt data using AES"
+	short := "Encrypt input using AES"
 	if o.Decode {
-		short = "Decrypt data using AES"
+		short = "Decrypt input using AES"
 	}
 
 	aesCmd := &cobra.Command{

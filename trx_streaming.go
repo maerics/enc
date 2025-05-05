@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -47,7 +48,7 @@ func addStreamingCodecs(rootCmd *cobra.Command, options *Options) {
 		cmd := &cobra.Command{
 			Use:     codec.Name,
 			Aliases: codec.Aliases,
-			Short:   fmt.Sprintf("%v input using %q", options.ActName, codec.Name),
+			Short:   fmt.Sprintf("%v input using %v", options.ActName, strings.ToUpper(codec.Name)),
 		}
 		cmd.Run = transcodeStreaming(cmd, codec, options)
 
@@ -57,7 +58,7 @@ func addStreamingCodecs(rootCmd *cobra.Command, options *Options) {
 		case "xor":
 			cmd.Flags().StringVarP(&options.Key, "key", "k", "", "key for xor transcoding")
 		}
-		cmd.Flags().BoolVarP(&options.Decode, "decode", "D", options.Decode,
+		cmd.Flags().BoolVarP(&options.Decode, "decode", "d", options.Decode,
 			fmt.Sprintf("decode input from %q to binary", codec.Name))
 		cmd.Flags().BoolVarP(&options.IgnoreWhitespace,
 			"ignore-whitespace", "w", options.IgnoreWhitespace,

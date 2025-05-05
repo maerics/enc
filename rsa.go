@@ -31,9 +31,9 @@ var (
 )
 
 func addRSACommands(rootCmd *cobra.Command, o *Options) {
-	short := "Encrypt data using RSA public key"
+	short := "Encrypt input using RSA public key"
 	if o.Decode {
-		short = "Decrypt data using RSA private key"
+		short = "Decrypt input using RSA private key"
 	}
 
 	rsaCmd := &cobra.Command{

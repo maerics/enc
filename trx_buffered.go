@@ -28,7 +28,7 @@ func addBufferedCodecs(rootCmd *cobra.Command, options *Options) {
 	for _, codec := range bufferedCodecs {
 		cmd := &cobra.Command{
 			Use:   codec.Name,
-			Short: fmt.Sprintf("%v input using %q", options.ActName, codec.Name),
+			Short: fmt.Sprintf("%v input using %v", options.ActName, strings.ToUpper(codec.Name)),
 		}
 		cmd.Run = func(*cobra.Command, []string) {
 			if err := codec.ParseFlags(options); err != nil {
@@ -38,7 +38,7 @@ func addBufferedCodecs(rootCmd *cobra.Command, options *Options) {
 		}
 		flags := cmd.Flags()
 		codec.SetFlags(flags, options)
-		flags.BoolVarP(&options.Decode, "decode", "D", options.Decode,
+		flags.BoolVarP(&options.Decode, "decode", "d", options.Decode,
 			`decode input from "base58" to binary`)
 		flags.BoolVarP(&options.IgnoreWhitespace,
 			"ignore-whitespace", "w", options.IgnoreWhitespace,

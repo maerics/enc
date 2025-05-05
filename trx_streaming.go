@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -56,7 +57,7 @@ func addStreamingCodecs(rootCmd *cobra.Command, options *Options) {
 		case "rot13":
 			cmd.Flags().Uint8VarP(&options.Offset, "offset", "r", 13, "offset for ROT13 transcoding")
 		case "xor":
-			cmd.Flags().StringVarP(&options.Key, "key", "k", "", "key for xor transcoding")
+			cmd.Flags().StringVarP(&options.Key, "key", "k", "", "key filename for xor transcoding")
 		}
 		cmd.Flags().BoolVarP(&options.Decode, "decode", "d", options.Decode,
 			fmt.Sprintf("decode input from %q to binary", codec.Name))
@@ -99,19 +100,31 @@ func transcodeStreaming(_ *cobra.Command, codec StreamingCodec, o *Options) func
 }
 
 func xorNewDecoderO(r io.Reader, o *Options) io.Reader {
-	// TODO: key as filename
 	if o.Key == "" {
-		log.Println(`WARNING: xor with empty key has no effect, try "--key=...".`)
+		log.Fatalf(`FATAL: missing required flag "--key=KEY_FILENAME"`)
 	}
-	return xor.NewDecoder([]byte(o.Key), r)
+	key, err := os.ReadFile(o.Key)
+	if err != nil {
+		log.Fatalf("FATAL: %v", err)
+	}
+	if len(key) == 0 {
+		log.Println(`WARNING: xor with empty key has no effect, try "--key=KEY_FILENAME".`)
+	}
+	return xor.NewDecoder([]byte(key), r)
 }
 
 func xorNewEncoderO(w io.Writer, o *Options) io.Writer {
-	// TODO: key as filename
 	if o.Key == "" {
+		log.Fatalf(`FATAL: missing required flag "--key=KEY_FILENAME"`)
+	}
+	key, err := os.ReadFile(o.Key)
+	if err != nil {
+		log.Fatalf("FATAL: %v", err)
+	}
+	if len(key) == 0 {
 		log.Println(`WARNING: xor with empty key has no effect, try "--key=...".`)
 	}
-	return xor.NewEncoder([]byte(o.Key), w)
+	return xor.NewEncoder(key, w)
 }
 
 func rot13NewDecoderO(r io.Reader, o *Options) io.Reader {

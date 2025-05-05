@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"path"
 	"reflect"
 	"regexp"
 	"strings"
@@ -49,6 +50,9 @@ type codecExample struct {
 }
 
 func TestKnownOutputs(t *testing.T) {
+	tempFilename := path.Join(t.TempDir(), "secret.txt")
+	os.WriteFile(tempFilename, []byte("secret"), os.FileMode(0644))
+
 	for i, example := range []codecExample{
 		// ascii85
 		{[]string{"ascii85"}, []byte(helloworld), []byte("87cURD_*#4DfTZ)+T"), nil},
@@ -81,8 +85,8 @@ func TestKnownOutputs(t *testing.T) {
 		{[]string{"rot13", "-r1"}, []byte("ABC\n"), []byte("BCD\n"), nil},
 
 		// xor
-		{[]string{"xor", "--key=secret"}, []byte("Attack!\n"), []byte{0x32, 0x11, 0x17, 0x13, 0x6, 0x1f, 0x52, 0x6f}, nil},
-		{[]string{"xor", "-D", "--key=secret"}, []byte([]byte{0x32, 0x11, 0x17, 0x13, 0x6, 0x1f, 0x52, 0x6f}), []byte("Attack!\n"), nil},
+		{[]string{"xor", "--key", tempFilename}, []byte("Attack!\n"), []byte{0x32, 0x11, 0x17, 0x13, 0x6, 0x1f, 0x52, 0x6f}, nil},
+		{[]string{"xor", "-D", "--key", tempFilename}, []byte([]byte{0x32, 0x11, 0x17, 0x13, 0x6, 0x1f, 0x52, 0x6f}), []byte("Attack!\n"), nil},
 	} {
 		encCmd := newEncCmd(getDefaultOptions())
 		encCmd.SetArgs(example.args)

@@ -43,9 +43,10 @@ $ echo 4f4b0a | enc -D hex -w
 # OK
 $ echo QEB NRFZH YOLTK CLU GRJMP LSBO QEB IXWV ALD | enc caesar -r3
 # THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG
-$ echo 'Attack!' | enc xor --key=secret | enc base64 ; echo
+$ echo 'secret' > /tmp/secret.txt
+$ echo 'Attack!' | enc xor --key=/tmp/secret.txt | enc base64 ; echo
 # MhEXEwYfUm8=
-$ echo MhEXEwYfUm8= | enc -D base64 | enc -D xor --key=secret
+$ echo MhEXEwYfUm8= | enc -D base64 | enc -D xor --key=/tmp/secret.txt
 # Attack!
 
 # RSA encryption.

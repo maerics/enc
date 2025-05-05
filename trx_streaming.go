@@ -99,6 +99,7 @@ func transcodeStreaming(_ *cobra.Command, codec StreamingCodec, o *Options) func
 }
 
 func xorNewDecoderO(r io.Reader, o *Options) io.Reader {
+	// TODO: key as filename
 	if o.Key == "" {
 		log.Println(`WARNING: xor with empty key has no effect, try "--key=...".`)
 	}
@@ -106,6 +107,7 @@ func xorNewDecoderO(r io.Reader, o *Options) io.Reader {
 }
 
 func xorNewEncoderO(w io.Writer, o *Options) io.Writer {
+	// TODO: key as filename
 	if o.Key == "" {
 		log.Println(`WARNING: xor with empty key has no effect, try "--key=...".`)
 	}

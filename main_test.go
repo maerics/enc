@@ -14,7 +14,7 @@ func TestMainHelp(t *testing.T) {
 	helpArgs := [][]string{{}, {"-h"}, {"--help"}, {"help"}}
 
 	helpMessages := []*regexp.Regexp{
-		regexp.MustCompile(`^Encrypt and transcode using various formats between streams or files.\n`),
+		regexp.MustCompile(`^Encrypt and encode between streams and files.\n`),
 		regexp.MustCompile(`Usage:\n  enc \[flags\]\n  enc \[command\]`),
 		regexp.MustCompile(`Flags:\n  -`),
 		regexp.MustCompile(`\nUse "enc \[command\] --help" for more information about a command.\n$`),

@@ -1,31 +1,31 @@
 # enc
 
-Encrypt and transcode using various formats between streams or files.
+Encrypt and encode between streams and files.
 
 ## Usage
 
 ```
-Encrypt and transcode using various formats between streams or files.
+Encrypt and encode between streams and files.
 
 Usage:
   enc [flags]
   enc [command]
 
 Available Commands:
-  aes         Encrypt data using AES
-  ascii85     Encode input using "ascii85"
-  base32      Encode input using "base32"
-  base58      Encode input using "base58"
-  base64      Encode input using "base64"
+  aes         Encrypt input using AES
+  ascii85     Encode input using ASCII85
+  base32      Encode input using BASE32
+  base58      Encode input using BASE58
+  base64      Encode input using BASE64
   help        Help about any command
-  hex         Encode input using "hex"
-  rot13       Encode input using "rot13"
-  rsa         Encrypt data using RSA public key
+  hex         Encode input using HEX
+  rot13       Encode input using ROT13
+  rsa         Encrypt input using RSA public key
   version     Print the current version
-  xor         Encode input using "xor"
+  xor         Encode input using XOR
 
 Flags:
-  -D, --decode               decode or decrypt input
+  -D, --decrypt              decrypt or decode input
   -h, --help                 help for enc
   -i, --input-file string    the input filename, omit or use "-" for stdin
   -o, --output-file string   the output filename, omit or use "-" for stdout

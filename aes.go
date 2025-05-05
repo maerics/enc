@@ -33,7 +33,7 @@ func addAesCommands(rootCmd *cobra.Command, o *Options) {
 	aesCmd.Flags().BoolVarP(&o.Decode, "decrypt", "d", o.Decode, "decrypt")
 	aesCmd.Flags().StringVarP(&o.KeyFilename, FlagNameKey, "k", "", "key filename")
 	aesCmd.Flags().StringVarP(&o.AdditionalDataFilename, "additional-data", "", "",
-		fmt.Sprintf("additional data for %q mode", aesModeGCMAEAD))
+		fmt.Sprintf("additional data filename for %q mode", aesModeGCMAEAD))
 
 	// TODO
 	// --mode={block,cbc,ecb,gcm-aead,...}

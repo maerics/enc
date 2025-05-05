@@ -49,7 +49,7 @@ func addStreamingCodecs(rootCmd *cobra.Command, options *Options) {
 		cmd := &cobra.Command{
 			Use:     codec.Name,
 			Aliases: codec.Aliases,
-			Short:   fmt.Sprintf("%v input using %v", options.ActName, strings.ToUpper(codec.Name)),
+			Short:   fmt.Sprintf("%v input using %v", options.ActionName, strings.ToUpper(codec.Name)),
 		}
 		cmd.Run = transcodeStreaming(cmd, codec, options)
 

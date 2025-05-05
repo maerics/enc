@@ -30,8 +30,8 @@ const (
 )
 
 type Options struct {
-	CmdName string
-	ActName string
+	CmdName    string
+	ActionName string
 
 	Decode           bool
 	IgnoreWhitespace bool
@@ -131,12 +131,12 @@ func main() {
 
 func getDefaultOptions() *Options {
 	// Determine if we're being called as "dec" instead of "enc".
-	options := &Options{CmdName: EncodeCmdName, ActName: EncodeActName}
+	options := &Options{CmdName: EncodeCmdName, ActionName: EncodeActName}
 	cmdName := filepath.Base(os.Args[0])
 	if cmdName == DecodeCmdName {
 		options.Decode = true
 		options.CmdName = DecodeCmdName
-		options.ActName = DecodeActName
+		options.ActionName = DecodeActName
 	}
 	return options
 }

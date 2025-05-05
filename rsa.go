@@ -174,8 +174,8 @@ func addGenerateCmd(rsaCmd *cobra.Command) {
 				log.Fatalf("FATAL: failed to generate RSA key pair of %v bits: %v", err, 2048)
 			}
 
-			privateWriter := fileWriter(rsaCmd, FilenameDescriptionPrivateKey, privateFilename, true)
-			publicWriter := fileWriter(rsaCmd, FilenameDescriptionPublicKey, publicFilename, true)
+			privateWriter := fileWriter(rsaCmd, FilenameDescriptionPrivateKey, privateFilename, true, 0400)
+			publicWriter := fileWriter(rsaCmd, FilenameDescriptionPublicKey, publicFilename, true, 0444)
 
 			// Output the private key.
 			privateKeyPEM := &pem.Block{
@@ -232,7 +232,7 @@ func addExtractPublicKeyCmd(rsaCmd *cobra.Command) {
 				Type:  RsaPublicKeyPEMType,
 				Bytes: x509.MarshalPKCS1PublicKey(&privateKey.PublicKey),
 			}
-			publicWriter := fileWriter(rsaCmd, FilenameDescriptionPublicKey, publicFilename, true)
+			publicWriter := fileWriter(rsaCmd, FilenameDescriptionPublicKey, publicFilename, true, 0444)
 			pem.Encode(publicWriter, publicKeyPEM)
 		},
 	}
@@ -260,7 +260,10 @@ func fileReader(cmd *cobra.Command, description, filename string, canUseStdin bo
 	return w
 }
 
-func fileWriter(cmd *cobra.Command, description, filename string, canUseStdout bool) io.Writer {
+func fileWriter(cmd *cobra.Command, description, filename string, canUseStdout bool, mode os.FileMode) io.Writer {
+	if mode == 0 {
+		mode = os.FileMode(0400)
+	}
 	if isStd(filename) {
 		if canUseStdout {
 			return cmd.OutOrStdout()
@@ -268,7 +271,7 @@ func fileWriter(cmd *cobra.Command, description, filename string, canUseStdout b
 		return nil
 	}
 	flags := os.O_WRONLY | os.O_CREATE | os.O_EXCL
-	w, err := os.OpenFile(filename, flags, os.FileMode(0600))
+	w, err := os.OpenFile(filename, flags, mode)
 	if err != nil {
 		log.Fatalf("FATAL: failed to open %v file for writing: %v", description, err)
 	}

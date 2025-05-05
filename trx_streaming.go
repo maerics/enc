@@ -59,8 +59,8 @@ func addStreamingCodecs(rootCmd *cobra.Command, options *Options) {
 		case "xor":
 			cmd.Flags().StringVarP(&options.Key, "key", "k", "", "key filename for xor transcoding")
 		}
-		cmd.Flags().BoolVarP(&options.Decode, "decode", "d", options.Decode,
-			fmt.Sprintf("decode input from %q to binary", codec.Name))
+		// cmd.Flags().BoolVarP(&options.Decode, "decode", "d", options.Decode,
+		// 	fmt.Sprintf("decode input from %q to binary", codec.Name))
 		cmd.Flags().BoolVarP(&options.IgnoreWhitespace,
 			"ignore-whitespace", "w", options.IgnoreWhitespace,
 			"ignore whitespace characters when decoding")

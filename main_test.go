@@ -57,35 +57,38 @@ func TestKnownOutputs(t *testing.T) {
 		// ascii85
 		{[]string{"ascii85"}, []byte(helloworld), []byte("87cURD_*#4DfTZ)+T"), nil},
 		{[]string{"ascii85", "-D"}, []byte("87cURD_*#4DfTZ)+T"), []byte(helloworld), nil},
+		{[]string{"ascii85", "-d"}, []byte("87cURD_*#4DfTZ)+T"), []byte(helloworld), nil},
 
 		// base32
 		{[]string{"base32"}, []byte(helloworld), []byte("JBSWY3DPFQQFO33SNRSCC==="), nil},
-		{[]string{"base32", "-D"}, []byte("JBSWY3DPFQQFO33SNRSCC==="), []byte(helloworld), nil},
+		{[]string{"base32", "-d"}, []byte("JBSWY3DPFQQFO33SNRSCC==="), []byte(helloworld), nil},
 
 		// base58
 		{[]string{"base58"}, []byte("OK\n"), []byte("Tdkm"), nil},
-		{[]string{"base58", "-D"}, []byte("Tdkm"), []byte("OK\n"), nil},
+		{[]string{"base58", "-d"}, []byte("Tdkm"), []byte("OK\n"), nil},
 
 		// base64
 		{[]string{"base64"}, []byte("OK!"), []byte("T0sh"), nil},
 		{[]string{"base64", "-D"}, []byte("T0sh"), []byte("OK!"), nil},
+		{[]string{"base64", "-d"}, []byte("T0sh"), []byte("OK!"), nil},
 
 		// hex
 		{[]string{"hex"}, []byte(helloworld), []byte("48656c6c6f2c20576f726c6421"), nil},
 		{[]string{"hex", "--append-newline"}, []byte(helloworld), []byte("48656c6c6f2c20576f726c6421\n"), nil},
 		{[]string{"hex", "-n"}, []byte(helloworld), []byte("48656c6c6f2c20576f726c6421\n"), nil},
 		{[]string{"hex", "--decode"}, []byte("48656c6c6f2c20576f726c6421"), []byte(helloworld), nil},
-		{[]string{"hex", "-D"}, []byte("48656c6c6f2c20576f726c6421"), []byte(helloworld), nil},
+		{[]string{"hex", "-d"}, []byte("48656c6c6f2c20576f726c6421"), []byte(helloworld), nil},
 		{[]string{"hex", "--decode", "--ignore-whitespace"}, []byte("48656c6c6f2c20576f726c6421\n"), []byte(helloworld), nil},
-		{[]string{"hex", "-D", "-w"}, []byte("48656c6c6f2c20576f726c6421\n"), []byte(helloworld), nil},
-		{[]string{"hex", "-Dw"}, []byte("48656c6c6f2c20576f726c6421\n"), []byte(helloworld), nil},
+		{[]string{"hex", "-d", "-w"}, []byte("48656c6c6f2c20576f726c6421\n"), []byte(helloworld), nil},
+		{[]string{"hex", "-dw"}, []byte("48656c6c6f2c20576f726c6421\n"), []byte(helloworld), nil},
 
 		// rot13/caesar
-		{[]string{"rot13", "-D", "-r1"}, []byte("BCD\n"), []byte("ABC\n"), nil},
+		{[]string{"rot13", "-d", "-r1"}, []byte("BCD\n"), []byte("ABC\n"), nil},
 		{[]string{"rot13", "-r1"}, []byte("ABC\n"), []byte("BCD\n"), nil},
 
 		// xor
 		{[]string{"xor", "--key", tempFilename}, []byte("Attack!\n"), []byte{0x32, 0x11, 0x17, 0x13, 0x6, 0x1f, 0x52, 0x6f}, nil},
+		{[]string{"xor", "-d", "--key", tempFilename}, []byte([]byte{0x32, 0x11, 0x17, 0x13, 0x6, 0x1f, 0x52, 0x6f}), []byte("Attack!\n"), nil},
 		{[]string{"xor", "-D", "--key", tempFilename}, []byte([]byte{0x32, 0x11, 0x17, 0x13, 0x6, 0x1f, 0x52, 0x6f}), []byte("Attack!\n"), nil},
 	} {
 		encCmd := newEncCmd(getDefaultOptions())
@@ -138,10 +141,10 @@ func TestFileIO(t *testing.T) {
 	for i, example := range []codecExample{
 		// Streaming
 		{[]string{"hex"}, []byte(helloworld), []byte("48656c6c6f2c20576f726c6421"), nil},
-		{[]string{"hex", "-D"}, []byte("48656c6c6f2c20576f726c6421"), []byte(helloworld), nil},
+		{[]string{"hex", "-d"}, []byte("48656c6c6f2c20576f726c6421"), []byte(helloworld), nil},
 		// Buffered
 		{[]string{"base58"}, []byte("OK\n"), []byte("Tdkm"), nil},
-		{[]string{"base58", "-D"}, []byte("Tdkm"), []byte("OK\n"), nil},
+		{[]string{"base58", "-d"}, []byte("Tdkm"), []byte("OK\n"), nil},
 	} {
 		for _, ioargs := range getStreamArgCombinations() {
 			// Create placeholder input and output files.

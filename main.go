@@ -94,6 +94,9 @@ func newEncCmd(options *Options) *cobra.Command {
 	encCmd.PersistentFlags().BoolVarP(&options.Decode,
 		"decrypt", "D", options.Decode,
 		"decrypt or decode input")
+	encCmd.PersistentFlags().BoolVarP(&options.Decode,
+		"decode", "d", options.Decode,
+		"decode or decrypt input")
 	encCmd.PersistentFlags().StringVarP(&options.InputFilename,
 		"input-file", "i", options.InputFilename,
 		"the input filename, omit or use \"-\" for stdin")

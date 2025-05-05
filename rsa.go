@@ -49,8 +49,6 @@ func addRSACommands(rootCmd *cobra.Command, o *Options) {
 		},
 	}
 
-	rsaCmd.Flags().BoolVarP(&o.Decode, "decrypt", "d", o.Decode,
-		"RSA decrypt using private key")
 	rsaCmd.Flags().StringVarP(&o.PrivateKeyFilename, FlagNamePrivateKey, "", "",
 		FilenameDescriptionPrivateKey+" filename")
 	rsaCmd.Flags().StringVarP(&o.PublicKeyFilename, FlagNamePublicKey, "", "",

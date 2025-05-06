@@ -16,8 +16,8 @@ type aesMode string
 
 const (
 	aesModeBlock   aesMode = "block"
-	aesModeCTR     aesMode = "ctr"
 	aesModeCBC     aesMode = "cbc"
+	aesModeCTR     aesMode = "ctr"
 	aesModeECB     aesMode = "ecb"
 	aesModeGCMAEAD aesMode = "gcm-aead"
 )
@@ -25,13 +25,13 @@ const (
 var (
 	AllAesModes = []string{
 		string(aesModeBlock),
-		string(aesModeCTR),
 		string(aesModeCBC),
+		string(aesModeCTR),
 		string(aesModeECB),
 		string(aesModeGCMAEAD),
 	}
 
-	aesModesString = `"` + strings.Join(AllAesModes, `", "`) + `"`
+	aesModesString = strings.Join(AllAesModes, ", ")
 )
 
 // String is used both by fmt.Print and by Cobra in help text
@@ -42,11 +42,11 @@ func (e *aesMode) String() string {
 // Set must have pointer receiver so it doesn't change the value of a copy
 func (e *aesMode) Set(v string) error {
 	switch v {
-	case string(aesModeBlock), string(aesModeCTR), string(aesModeCBC), string(aesModeECB), string(aesModeGCMAEAD):
+	case string(aesModeBlock), string(aesModeCBC), string(aesModeCTR), string(aesModeECB), string(aesModeGCMAEAD):
 		*e = aesMode(v)
 		return nil
 	default:
-		return errors.New(`must be one of ` + aesModesString)
+		return errors.New("must be one of " + aesModesString)
 	}
 }
 

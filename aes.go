@@ -31,7 +31,7 @@ func addAesCommands(rootCmd *cobra.Command, o *Options) {
 	}
 
 	aesCmd.Flags().StringVarP(&o.KeyFilename, FlagNameKey, "k", "", "key filename")
-	aesCmd.Flags().StringVarP(&o.AdditionalDataFilename, "additional-data", "", "",
+	aesCmd.Flags().StringVarP(&o.AdditionalDataFilename, "additional-data", "a", "",
 		fmt.Sprintf("additional data filename for %q mode", aesModeGCMAEAD))
 
 	// TODO

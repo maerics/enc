@@ -53,7 +53,14 @@ type Options struct {
 
 	AdditionalDataFilename string
 
-	AESMode aesMode
+	CryptoMode cryptoMode
+}
+
+func (o *Options) EncryptionModeString() string {
+	if o.Decode {
+		return "decryption"
+	}
+	return "encryption"
 }
 
 // Linked at build time.
@@ -111,7 +118,8 @@ func newEncCmd(options *Options) *cobra.Command {
 	// Add the subcommands
 	addStreamingCodecs(encCmd, options)
 	addBufferedCodecs(encCmd, options)
-	addAesCommands(encCmd, options)
+	addAESCommands(encCmd, options)
+	addDESCommands(encCmd, options)
 	addRSACommands(encCmd, options)
 
 	encCmd.Run = func(cmd *cobra.Command, args []string) {

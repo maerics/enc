@@ -33,11 +33,11 @@ func TestAesEndToEnd(t *testing.T) {
 		mustRand(t, 32),
 	}
 
-	examples := map[aesMode][]func(message, key []byte) error{
-		aesModeBlock: {
+	examples := map[cryptoMode][]func(message, key []byte) error{
+		cryptoModeBlock: {
 			func(message, key []byte) error {
 				if len(message) != len(key) {
-					return fmt.Errorf("aes/encrypt: key size %vb != input size %vb", len(key), len(message))
+					return fmt.Errorf("AES/encrypt: key size %vb != input size %vb", len(key), len(message))
 				}
 				return nil
 			},

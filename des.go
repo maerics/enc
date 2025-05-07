@@ -31,7 +31,7 @@ func addDESCommands(rootCmd *cobra.Command, o *Options) {
 
 	desCmd.Flags().StringVarP(&o.KeyFilename, FlagNameKey, "k", "", "key filename")
 
-	desCmd.Flags().Var(&o.CryptoMode, "mode", o.EncryptionModeString()+" mode: "+cryptoModesString)
+	desCmd.Flags().VarP(&o.CryptoMode, "mode", "m", o.EncryptionModeString()+" mode: "+cryptoModesString)
 
 	rootCmd.AddCommand(desCmd)
 }

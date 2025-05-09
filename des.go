@@ -18,27 +18,27 @@ func addDESCommands(rootCmd *cobra.Command, o *Options) {
 		aliases    []string
 	}
 
-	for _, x := range []desCommandInfo{
+	for _, algo := range []desCommandInfo{
 		{"des", CipherNameDES, des.NewCipher, nil},
 		{"des3", CipherNameTRIPLEDES, des.NewTripleDESCipher, []string{"3des", "tripledes", "triple-des"}},
 	} {
-		(func(c desCommandInfo) {
+		(func(cmdInfo desCommandInfo) {
 			o.CryptoMode = cryptoModeBlock
-			short := "Encrypt input using " + c.cipherName
+			short := "Encrypt input using " + cmdInfo.cipherName
 			if o.Decode {
-				short = "Decrypt input using " + c.cipherName
+				short = "Decrypt input using " + cmdInfo.cipherName
 			}
 
 			desCmd := &cobra.Command{
-				Use:     c.cmdName,
+				Use:     cmdInfo.cmdName,
 				Short:   short,
 				Args:    cobra.NoArgs,
-				Aliases: c.aliases,
-				RunE: func(cmd *cobra.Command, args []string) error {
+				Aliases: cmdInfo.aliases,
+				RunE: func(cmd *cobra.Command, _ []string) error {
 					if o.Decode {
-						return decrypt(cmd, o, CipherNameDES, c.cipherFunc)
+						return decrypt(cmd, o, cmdInfo.cipherName, cmdInfo.cipherFunc)
 					}
-					return encrypt(cmd, o, CipherNameDES, c.cipherFunc)
+					return encrypt(cmd, o, cmdInfo.cipherName, cmdInfo.cipherFunc)
 				},
 			}
 
@@ -46,6 +46,6 @@ func addDESCommands(rootCmd *cobra.Command, o *Options) {
 			desCmd.Flags().VarP(&o.CryptoMode, "mode", "m", o.EncryptionModeString()+" mode: "+cryptoModesString)
 
 			rootCmd.AddCommand(desCmd)
-		})(x)
+		})(algo)
 	}
 }

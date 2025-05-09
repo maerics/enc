@@ -2,16 +2,13 @@ package main
 
 import (
 	"bytes"
-	"crypto/rand"
 	"fmt"
-	"io"
-	"os"
 	"path"
 	"reflect"
 	"testing"
 )
 
-func TestAESEndToEnd(t *testing.T) {
+func TestDESEndToEnd(t *testing.T) {
 	messages := [][]byte{
 		// -- 128bit (16byte) message boundaries
 		[]byte("Hello, World!!\n"),   // 15byte
@@ -28,19 +25,14 @@ func TestAESEndToEnd(t *testing.T) {
 	}
 
 	keys := [][]byte{
-		mustRand(t, 16),
-		mustRand(t, 24),
-		mustRand(t, 32),
+		mustRand(t, 8),
 	}
 
 	examples := map[cryptoMode][]func(message, key []byte) error{
-		cryptoModeGCMAEAD: {
-			func(message, key []byte) error { return nil },
-		},
 		cryptoModeBlock: {
 			func(message, key []byte) error {
 				if len(message) != len(key) {
-					return fmt.Errorf("AES/encrypt: key size %vb != input size %vb", len(key), len(message))
+					return fmt.Errorf("DES/encrypt: key size %vb != input size %vb", len(key), len(message))
 				}
 				return nil
 			},
@@ -53,15 +45,15 @@ func TestAESEndToEnd(t *testing.T) {
 				for _, errorFunc := range errorFuncs {
 					expectedErr := errorFunc(message, key)
 
-					// AES encrypt.
-					keyFilename := path.Join(t.TempDir(), fmt.Sprintf("aes-ks%v-ms%v.key", len(key), len(message)))
+					// DES encrypt.
+					keyFilename := path.Join(t.TempDir(), fmt.Sprintf("des-ks%v-ms%v.key", len(key), len(message)))
 					mustWrite(t, keyFilename, key)
-					aesEncryptCmd := newEncCmd(getDefaultOptions())
-					aesEncryptCmd.SetArgs([]string{"aes", "--mode", string(mode), "--key", keyFilename})
-					aesEncryptCmd.SetIn(bytes.NewReader(message))
+					desEncryptCmd := newEncCmd(getDefaultOptions())
+					desEncryptCmd.SetArgs([]string{"des", "--mode", string(mode), "--key", keyFilename})
+					desEncryptCmd.SetIn(bytes.NewReader(message))
 					encryptStdout := new(bytes.Buffer)
-					aesEncryptCmd.SetOut(encryptStdout)
-					encryptErr := aesEncryptCmd.Execute()
+					desEncryptCmd.SetOut(encryptStdout)
+					encryptErr := desEncryptCmd.Execute()
 					encryptedBytes := encryptStdout.Bytes()
 					if encryptErr != nil {
 						if expectedErr == nil {
@@ -78,13 +70,13 @@ func TestAESEndToEnd(t *testing.T) {
 							mode, len(key), len(message), expectedErr)
 					}
 
-					// AES decrypt.
-					aesDecryptCmd := newEncCmd(getDefaultOptions())
-					aesDecryptCmd.SetArgs([]string{"aes", "--decrypt", "--mode", string(mode), "--key", keyFilename})
-					aesDecryptCmd.SetIn(bytes.NewReader(encryptedBytes))
+					// DES decrypt.
+					desDecryptCmd := newEncCmd(getDefaultOptions())
+					desDecryptCmd.SetArgs([]string{"des", "--decrypt", "--mode", string(mode), "--key", keyFilename})
+					desDecryptCmd.SetIn(bytes.NewReader(encryptedBytes))
 					decryptStdout := new(bytes.Buffer)
-					aesDecryptCmd.SetOut(decryptStdout)
-					decryptErr := aesDecryptCmd.Execute()
+					desDecryptCmd.SetOut(decryptStdout)
+					decryptErr := desDecryptCmd.Execute()
 					plaintextBytes := decryptStdout.Bytes()
 					if decryptErr != nil {
 						if expectedErr == nil {
@@ -111,26 +103,4 @@ func TestAESEndToEnd(t *testing.T) {
 			}
 		}
 	}
-}
-
-func mustRead(t *testing.T, filename string) []byte {
-	bs, err := os.ReadFile(filename)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return bs
-}
-
-func mustWrite(t *testing.T, filename string, bs []byte) {
-	if err := os.WriteFile(filename, bs, os.FileMode(0o644)); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func mustRand(t *testing.T, n int) []byte {
-	bs := make([]byte, n)
-	if _, err := io.ReadFull(rand.Reader, bs); err != nil {
-		t.Fatal(err)
-	}
-	return bs
 }

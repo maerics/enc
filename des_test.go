@@ -16,8 +16,8 @@ func TestDESEndToEnd(t *testing.T) {
 		[]byte("Hello, World!!!!\n"), // 17byte
 		// -- 192bit (24byte) message boundaries
 		[]byte("Reality called I hung u"),    // 23byte
-		[]byte("Reality called I hung up"),   // 23byte
-		[]byte("Reality called I hung up\n"), // 23byte
+		[]byte("Reality called I hung up"),   // 24byte
+		[]byte("Reality called I hung up\n"), // 25byte
 		// -- 256bit (32byte) message boundaries
 		[]byte("This is a test of the emergenc"),    // 31byte
 		[]byte("This is a test of the emergency"),   // 32byte
@@ -26,6 +26,9 @@ func TestDESEndToEnd(t *testing.T) {
 
 	keys := [][]byte{
 		mustRand(t, 8),
+		// mustRand(t, 16),
+		// mustRand(t, 24),
+		// mustRand(t, 32),
 	}
 
 	examples := map[cryptoMode][]func(message, key []byte) error{

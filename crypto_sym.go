@@ -19,24 +19,26 @@ const (
 )
 
 func addSymmetricCryptoCommands(rootCmd *cobra.Command, o *Options) {
-	type desCommandInfo struct {
-		cmdName    string
-		cipherName string
-		cipherFunc func([]byte) (cipher.Block, error)
-		aliases    []string
+	type cryptoSymCmdInfo struct {
+		cmdName     string
+		cipherName  string
+		cipherFunc  func([]byte) (cipher.Block, error)
+		aliases     []string
+		defaultMode cryptoMode
 	}
 
-	for _, algo := range []desCommandInfo{
-		{"aes", CipherNameAES, aes.NewCipher, nil},
-		{"des", CipherNameDES, des.NewCipher, nil},
-		{"des3", CipherNameTRIPLEDES, des.NewTripleDESCipher, []string{"3des", "tripledes", "triple-des"}},
+	for _, algo := range []cryptoSymCmdInfo{
+		{"aes", CipherNameAES, aes.NewCipher, nil, cryptoModeGCM},
+		{"des", CipherNameDES, des.NewCipher, nil, cryptoModeCTR},
+		{"des3", CipherNameTRIPLEDES, des.NewTripleDESCipher, []string{"3des", "tripledes", "triple-des"}, cryptoModeCTR},
 	} {
-		o.CryptoMode = cryptoModeCTR // Default to CTR mode.
-		(func(cmdInfo desCommandInfo) {
+		(func(cmdInfo cryptoSymCmdInfo) {
 			short := "Encrypt input using " + cmdInfo.cipherName
 			if o.Decode {
 				short = "Decrypt input using " + cmdInfo.cipherName
 			}
+
+			o.CryptoMode = cmdInfo.defaultMode
 
 			symCryptoCmd := &cobra.Command{
 				Use:     cmdInfo.cmdName,

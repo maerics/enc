@@ -27,6 +27,7 @@ const (
 	FlagNamePrivateKey = "private-key"
 	FlagNamePublicKey  = "public-key"
 	FlagNameKey        = "key"
+	FlagNameIV         = "iv"
 )
 
 type Options struct {
@@ -51,7 +52,8 @@ type Options struct {
 	PublicKeyFilename  string
 	KeyFilename        string
 
-	AdditionalDataFilename string
+	AdditionalDataFilename       string
+	InitializationVectorFilename string
 
 	CryptoMode cryptoMode
 }
@@ -118,8 +120,7 @@ func newEncCmd(options *Options) *cobra.Command {
 	// Add the subcommands
 	addStreamingCodecs(encCmd, options)
 	addBufferedCodecs(encCmd, options)
-	addAESCommands(encCmd, options)
-	addDESCommands(encCmd, options)
+	addSymmetricCryptoCommands(encCmd, options)
 	addRSACommands(encCmd, options)
 
 	encCmd.Run = func(cmd *cobra.Command, args []string) {

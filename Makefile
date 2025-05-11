@@ -36,4 +36,4 @@ release: ensure-no-local-changes clean
 	goreleaser release
 
 clean:
-	rm -rf ./enc ./dist
+	rm -rf ./enc ./dist *.key *.dat

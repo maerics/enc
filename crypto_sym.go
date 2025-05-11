@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"io"
+	"log"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -188,7 +189,6 @@ func encryptCTR(cipherName string, c cipher.Block, plaintext []byte, ciphertextW
 	ciphertext := make([]byte, c.BlockSize()+len(plaintext))
 	iv := ciphertext[:c.BlockSize()]
 	if o.InitializationVectorFilename != "" {
-		// TODO: file open?
 		bs, err := os.ReadFile(o.InitializationVectorFilename)
 		if err != nil {
 			return fmt.Errorf(`failed to read "iv" file for reading: %v`, err)
@@ -210,7 +210,9 @@ func encryptCTR(cipherName string, c cipher.Block, plaintext []byte, ciphertextW
 
 // CTR mode encryption.
 func decryptCTR(cipherName string, c cipher.Block, ciphertext []byte, plaintextWriter io.Writer, o *Options) error {
-	// TODO: warn if given IV flag?
+	if o.InitializationVectorFilename != "" {
+		log.Printf("WARNING: ignoring unused %v flag for decoding", FlagNameIV)
+	}
 	iv := ciphertext[:c.BlockSize()]
 	plaintext := ciphertext[c.BlockSize():]
 	stream := cipher.NewCTR(c, iv)

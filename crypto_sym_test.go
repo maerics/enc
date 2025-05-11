@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/aes"
 	"crypto/rand"
 	"fmt"
 	"io"
@@ -16,16 +17,14 @@ var knownErrors = map[string]func(algo, mode string, key, message, iv, ad []byte
 		switch true {
 		case mode == string(cryptoModeCBC):
 			return fmt.Errorf("mode %q not implemented", string(cryptoModeCBC))
-		case mode == string(cryptoModeCTR):
-			return fmt.Errorf("mode %q not implemented", string(cryptoModeCTR))
 		case mode == string(cryptoModeECB):
 			return fmt.Errorf("mode %q not implemented", string(cryptoModeECB))
 		case !find(len(key), 16, 24, 32): // Key size must be {16,24,32}
 			return fmt.Errorf("failed to create AES cipher: crypto/aes: invalid key size %v", len(key))
 		case mode == string(cryptoModeBlock) && len(message) != len(key):
 			return fmt.Errorf("AES/encrypt: key size %vb != input size %vb", len(key), len(message))
-		case mode == string(cryptoModeCTR) && len(iv) > 0 && len(iv) != len(key):
-			return fmt.Errorf("invalid initialization vector size %v for block size 8", len(iv))
+		case mode == string(cryptoModeCTR) && len(iv) > 0 && len(iv) != aes.BlockSize:
+			return fmt.Errorf("invalid initialization vector size %v for block size %v", len(iv), aes.BlockSize)
 		}
 		return nil
 	},
@@ -35,8 +34,6 @@ var knownErrors = map[string]func(algo, mode string, key, message, iv, ad []byte
 			return fmt.Errorf("unknown flag: --additional-data")
 		case mode == string(cryptoModeCBC):
 			return fmt.Errorf("mode %q not implemented", string(cryptoModeCBC))
-		case mode == string(cryptoModeCTR):
-			return fmt.Errorf("mode %q not implemented", string(cryptoModeCTR))
 		case mode == string(cryptoModeECB):
 			return fmt.Errorf("mode %q not implemented", string(cryptoModeECB))
 		case len(key) != 8: // Key size must be 8

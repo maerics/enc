@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/des"
@@ -75,8 +74,8 @@ func encrypt(cmd *cobra.Command, o *Options, cipherName string, cipherFunc func(
 	switch o.CryptoMode {
 	case cryptoModeBlock:
 		encryptFunc = encryptBlock
-	// case cryptoModeCTR:
-	// 	encryptFunc = encryptCTR
+	case cryptoModeCTR:
+		encryptFunc = encryptCTR
 	case cryptoModeGCM:
 		encryptFunc = encryptGCMAEAD
 	default:
@@ -119,8 +118,8 @@ func decrypt(cmd *cobra.Command, o *Options, cipherName string, cipherFunc func(
 	switch o.CryptoMode {
 	case cryptoModeBlock:
 		decryptFunc = decryptBlock
-	// case cryptoModeCTR:
-	// 	decryptFunc = decryptCTR
+	case cryptoModeCTR:
+		decryptFunc = decryptCTR
 	case cryptoModeGCM:
 		decryptFunc = decryptGCMAEAD
 	default:
@@ -186,22 +185,16 @@ func encryptCTR(cipherName string, c cipher.Block, plaintext []byte, ciphertextW
 	iv := ciphertext[:c.BlockSize()]
 	if o.InitializationVectorFilename != "" {
 		// TODO: file open?
-		r, err := os.Open(o.InitializationVectorFilename)
+		bs, err := os.ReadFile(o.InitializationVectorFilename)
 		if err != nil {
-			return fmt.Errorf(`failed to open "iv" file for reading: %v`, err)
+			return fmt.Errorf(`failed to read "iv" file for reading: %v`, err)
 		}
-		if bs, err := io.ReadAll(r); err != nil {
-			return err
-		} else {
-			if len(iv) != len(bs) {
-				return fmt.Errorf("invalid initialization vector size %v for block size %v", len(bs), len(iv))
-			}
-			copy(iv, bs)
+		if len(iv) != len(bs) {
+			return fmt.Errorf("invalid initialization vector size %v for block size %v", len(bs), len(iv))
 		}
-	} else {
-		if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-			return err
-		}
+		copy(iv, bs)
+	} else if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		return err
 	}
 	stream := cipher.NewCTR(c, iv)
 	stream.XORKeyStream(ciphertext[c.BlockSize():], plaintext)
@@ -215,9 +208,6 @@ func encryptCTR(cipherName string, c cipher.Block, plaintext []byte, ciphertextW
 func decryptCTR(cipherName string, c cipher.Block, ciphertext []byte, plaintextWriter io.Writer, o *Options) error {
 	// TODO: warn if given IV flag?
 	iv := ciphertext[:c.BlockSize()]
-	if len(ciphertext) < c.BlockSize() {
-		ciphertext = PadPKCS5(ciphertext, c.BlockSize())
-	}
 	plaintext := ciphertext[c.BlockSize():]
 	stream := cipher.NewCTR(c, iv)
 	stream.XORKeyStream(plaintext, ciphertext[c.BlockSize():])
@@ -283,24 +273,4 @@ func decryptGCMAEAD(cipherName string, c cipher.Block, ciphertext []byte, plaint
 		return fmt.Errorf("failed to write plaintext: %v", err)
 	}
 	return nil
-}
-
-// Pad applies PKCS#5 padding to the input data to match the block size.
-func PadPKCS5(data []byte, blockSize int) []byte {
-	paddingLen := blockSize - (len(data) % blockSize)
-	padding := bytes.Repeat([]byte{byte(paddingLen)}, paddingLen)
-	return append(data, padding...)
-}
-
-// Unpad removes PKCS#5 padding from the input data.
-func UnpadPKCS5(data []byte) []byte {
-	dataLen := len(data)
-	if dataLen == 0 {
-		return data
-	}
-	paddingLen := int(data[dataLen-1])
-	if paddingLen > dataLen {
-		return data
-	}
-	return data[:dataLen-paddingLen]
 }

@@ -66,7 +66,7 @@ func (o *Options) EncryptionModeString() string {
 }
 
 // Linked at build time.
-var version, commit, date string
+var version, commit, date, modified string
 
 func newEncCmd(options *Options) *cobra.Command {
 	printVersion := false
@@ -179,6 +179,7 @@ type versionInfo struct {
 	Version   string `json:"version,omitempty"`
 	Commit    string `json:"commit,omitempty"`
 	Timestamp string `json:"timestamp,omitempty"`
+	Modified  string `json:"modified,omitempty"`
 }
 
 func parseVersionInfo() versionInfo {
@@ -186,6 +187,7 @@ func parseVersionInfo() versionInfo {
 		Version:   version,
 		Commit:    commit,
 		Timestamp: date,
+		Modified:  modified,
 	}
 }
 

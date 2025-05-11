@@ -10,12 +10,14 @@ vet:
 BUILD_VERSION = $(shell git describe --exact-match --tags)
 BUILD_COMMIT = $(shell git rev-parse head)
 BUILD_TIMESTAMP = $(shell date -z zulu +'%Y-%m-%dT%H:%M:%SZ')
+BUILD_MODIFIED = $(shell git status -s)
 build: test
 	go build \
 		-ldflags " \
 			-X 'main.version=$(BUILD_VERSION)' \
 			-X 'main.commit=$(BUILD_COMMIT)' \
 			-X 'main.date=$(BUILD_TIMESTAMP)' \
+			-X 'main.modified=$(BUILD_MODIFIED)' \
 		" \
 	-o ./enc *.go
 

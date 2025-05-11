@@ -10,7 +10,7 @@ import (
 // --block (shorthand for "--mode=block")
 // --cbc (shorthand for "--mode=cbc")
 // --ecb (shorthand for "--mode=ecb")
-// --gcm (shorthand for "--mode=gcm" [default])
+// --gcm (shorthand for "--mode=gcm")
 
 type cryptoMode string
 

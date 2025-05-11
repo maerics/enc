@@ -38,15 +38,15 @@ func addSymmetricCryptoCommands(rootCmd *cobra.Command, o *Options) {
 				short = "Decrypt input using " + cmdInfo.cipherName
 			}
 
+			activeCryptoMode := cmdInfo.defaultMode
+
 			symCryptoCmd := &cobra.Command{
 				Use:     cmdInfo.cmdName,
 				Short:   short,
 				Args:    cobra.NoArgs,
 				Aliases: cmdInfo.aliases,
 				PreRun: func(cmd *cobra.Command, args []string) {
-					if o.CryptoMode == "" {
-						o.CryptoMode = cmdInfo.defaultMode
-					}
+					o.CryptoMode = activeCryptoMode
 				},
 				RunE: func(cmd *cobra.Command, _ []string) error {
 					if o.Decode {
@@ -57,7 +57,7 @@ func addSymmetricCryptoCommands(rootCmd *cobra.Command, o *Options) {
 			}
 
 			symCryptoCmd.Flags().StringVarP(&o.KeyFilename, FlagNameKey, "k", "", "key filename")
-			symCryptoCmd.Flags().VarP(&o.CryptoMode, "mode", "m", o.EncryptionModeString()+" mode: "+cryptoModesString)
+			symCryptoCmd.Flags().VarP(&activeCryptoMode, "mode", "m", o.EncryptionModeString()+" mode: "+cryptoModesString)
 
 			symCryptoCmd.Flags().StringVarP(&o.InitializationVectorFilename, FlagNameIV, "", "", "initialization vector filename")
 

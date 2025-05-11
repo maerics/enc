@@ -57,10 +57,9 @@ func addSymmetricCryptoCommands(rootCmd *cobra.Command, o *Options) {
 			}
 
 			symCryptoCmd.Flags().StringVarP(&o.KeyFilename, FlagNameKey, "k", "", "key filename")
-
-			// TODO: selective modes and IV args?
-			symCryptoCmd.Flags().StringVarP(&o.InitializationVectorFilename, FlagNameIV, "", "", "initialization vector filename")
 			symCryptoCmd.Flags().VarP(&o.CryptoMode, "mode", "m", o.EncryptionModeString()+" mode: "+cryptoModesString)
+
+			symCryptoCmd.Flags().StringVarP(&o.InitializationVectorFilename, FlagNameIV, "", "", "initialization vector filename")
 
 			if algo.cmdName == "aes" {
 				symCryptoCmd.Flags().StringVarP(&o.AdditionalDataFilename, "additional-data", "a", "",

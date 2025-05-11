@@ -38,13 +38,16 @@ func addSymmetricCryptoCommands(rootCmd *cobra.Command, o *Options) {
 				short = "Decrypt input using " + cmdInfo.cipherName
 			}
 
-			o.CryptoMode = cmdInfo.defaultMode
-
 			symCryptoCmd := &cobra.Command{
 				Use:     cmdInfo.cmdName,
 				Short:   short,
 				Args:    cobra.NoArgs,
 				Aliases: cmdInfo.aliases,
+				PreRun: func(cmd *cobra.Command, args []string) {
+					if o.CryptoMode == "" {
+						o.CryptoMode = cmdInfo.defaultMode
+					}
+				},
 				RunE: func(cmd *cobra.Command, _ []string) error {
 					if o.Decode {
 						return decrypt(cmd, o, cmdInfo.cipherName, cmdInfo.cipherFunc)

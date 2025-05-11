@@ -28,47 +28,45 @@ func addSymmetricCryptoCommands(rootCmd *cobra.Command, o *Options) {
 		defaultMode cryptoMode
 	}
 
-	for _, algo := range []cryptoSymCmdInfo{
+	for _, cmdInfo := range []cryptoSymCmdInfo{
 		{"aes", CipherNameAES, aes.NewCipher, nil, cryptoModeGCM},
 		{"des", CipherNameDES, des.NewCipher, nil, cryptoModeCTR},
 		{"des3", CipherNameTRIPLEDES, des.NewTripleDESCipher, []string{"3des", "tripledes", "triple-des"}, cryptoModeCTR},
 	} {
-		(func(cmdInfo cryptoSymCmdInfo) {
-			short := "Encrypt input using " + cmdInfo.cipherName
-			if o.Decode {
-				short = "Decrypt input using " + cmdInfo.cipherName
-			}
+		short := "Encrypt input using " + cmdInfo.cipherName
+		if o.Decode {
+			short = "Decrypt input using " + cmdInfo.cipherName
+		}
 
-			activeCryptoMode := cmdInfo.defaultMode
+		activeCryptoMode := cmdInfo.defaultMode
 
-			symCryptoCmd := &cobra.Command{
-				Use:     cmdInfo.cmdName,
-				Short:   short,
-				Args:    cobra.NoArgs,
-				Aliases: cmdInfo.aliases,
-				PreRun: func(cmd *cobra.Command, args []string) {
-					o.CryptoMode = activeCryptoMode
-				},
-				RunE: func(cmd *cobra.Command, _ []string) error {
-					if o.Decode {
-						return decrypt(cmd, o, cmdInfo.cipherName, cmdInfo.cipherFunc)
-					}
-					return encrypt(cmd, o, cmdInfo.cipherName, cmdInfo.cipherFunc)
-				},
-			}
+		cryptoCmd := &cobra.Command{
+			Use:     cmdInfo.cmdName,
+			Short:   short,
+			Args:    cobra.NoArgs,
+			Aliases: cmdInfo.aliases,
+			PreRun: func(cmd *cobra.Command, args []string) {
+				o.CryptoMode = activeCryptoMode
+			},
+			RunE: func(cmd *cobra.Command, _ []string) error {
+				if o.Decode {
+					return decrypt(cmd, o, cmdInfo.cipherName, cmdInfo.cipherFunc)
+				}
+				return encrypt(cmd, o, cmdInfo.cipherName, cmdInfo.cipherFunc)
+			},
+		}
 
-			symCryptoCmd.Flags().StringVarP(&o.KeyFilename, FlagNameKey, "k", "", "key filename")
-			symCryptoCmd.Flags().VarP(&activeCryptoMode, "mode", "m", o.EncryptionModeString()+" mode: "+cryptoModesString)
+		cryptoCmd.Flags().StringVarP(&o.KeyFilename, FlagNameKey, "k", "", "key filename")
+		cryptoCmd.Flags().VarP(&activeCryptoMode, "mode", "m", o.EncryptionModeString()+" mode: "+cryptoModesString)
 
-			symCryptoCmd.Flags().StringVarP(&o.InitializationVectorFilename, FlagNameIV, "", "", "initialization vector filename")
+		cryptoCmd.Flags().StringVarP(&o.InitializationVectorFilename, FlagNameIV, "", "", "initialization vector filename")
 
-			if algo.cmdName == "aes" {
-				symCryptoCmd.Flags().StringVarP(&o.AdditionalDataFilename, "additional-data", "a", "",
-					fmt.Sprintf("additional data filename for %q mode", cryptoModeGCM))
-			}
+		if cmdInfo.cmdName == "aes" {
+			cryptoCmd.Flags().StringVarP(&o.AdditionalDataFilename, "additional-data", "a", "",
+				fmt.Sprintf("additional data filename for %q mode", cryptoModeGCM))
+		}
 
-			rootCmd.AddCommand(symCryptoCmd)
-		})(algo)
+		rootCmd.AddCommand(cryptoCmd)
 	}
 }
 

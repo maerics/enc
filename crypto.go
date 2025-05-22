@@ -5,6 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/des"
 	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
@@ -59,7 +60,10 @@ func addSymmetricCryptoCommands(rootCmd *cobra.Command, o *Options) {
 		cryptoCmd.Flags().StringVarP(&o.KeyFilename, FlagNameKey, "k", "", "key filename")
 		cryptoCmd.Flags().VarP(&activeCryptoMode, "mode", "m", o.EncryptionModeString()+" mode: "+cryptoModesString)
 
-		cryptoCmd.Flags().StringVarP(&o.InitializationVectorFilename, FlagNameIV, "", "", "initialization vector filename")
+		cryptoCmd.Flags().StringVarP(&o.InitializationVectorFilename, FlagNameIV, "",
+			o.InitializationVectorFilename, "initialization vector filename")
+		cryptoCmd.Flags().BoolVarP(&o.OmitInitializationVector, FlagNameOmitIV, "",
+			o.OmitInitializationVector, "omit the initialization vector from encrypted output")
 
 		if cmdInfo.cmdName == "aes" {
 			cryptoCmd.Flags().StringVarP(&o.AdditionalDataFilename, "additional-data", "a", "",
@@ -184,12 +188,12 @@ func decryptBlock(cipherName string, c cipher.Block, ciphertext []byte, plaintex
 
 // CTR mode encryption.
 func encryptCTR(cipherName string, c cipher.Block, plaintext []byte, ciphertextWriter io.Writer, o *Options) error {
-	ciphertext := make([]byte, c.BlockSize()+len(plaintext))
-	iv := ciphertext[:c.BlockSize()]
+	iv := make([]byte, c.BlockSize())
+	ciphertext := make([]byte, len(plaintext))
 	if o.InitializationVectorFilename != "" {
 		bs, err := os.ReadFile(o.InitializationVectorFilename)
 		if err != nil {
-			return fmt.Errorf(`failed to read "iv" file for reading: %v`, err)
+			return fmt.Errorf(`failed to read "iv" file: %v`, err)
 		}
 		if len(iv) != len(bs) {
 			return fmt.Errorf("invalid initialization vector size %v for block size %v", len(bs), len(iv))
@@ -199,8 +203,14 @@ func encryptCTR(cipherName string, c cipher.Block, plaintext []byte, ciphertextW
 		return err
 	}
 	stream := cipher.NewCTR(c, iv)
-	stream.XORKeyStream(ciphertext[c.BlockSize():], plaintext)
-	if _, err := ciphertextWriter.Write(ciphertext); err != nil {
+	stream.XORKeyStream(ciphertext, plaintext)
+	output := ciphertext
+	if !o.OmitInitializationVector {
+		output = append(iv, ciphertext...)
+	} else if o.InitializationVectorFilename == "" {
+		log.Printf("iv=%v", hex.EncodeToString(iv))
+	}
+	if _, err := ciphertextWriter.Write(output); err != nil {
 		return fmt.Errorf("failed to write ciphertext: %v", err)
 	}
 	return nil
@@ -228,7 +238,7 @@ func encryptGCMAEAD(cipherName string, c cipher.Block, plaintext []byte, ciphert
 		return fmt.Errorf("failed to initialize GCM AEAD mode: %v", err)
 	}
 	nonceSize := gcm.NonceSize()
-	nonce := make([]byte, nonceSize)
+	nonce := make([]byte, nonceSize) // TODO: is this the IV?
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return fmt.Errorf("failed to generate nonce of size %v: %v", nonceSize, err)
 	}

@@ -28,6 +28,7 @@ const (
 	FlagNamePublicKey  = "public-key"
 	FlagNameKey        = "key"
 	FlagNameIV         = "iv"
+	FlagNameOmitIV     = "omit-iv"
 )
 
 type Options struct {
@@ -54,6 +55,7 @@ type Options struct {
 
 	AdditionalDataFilename       string
 	InitializationVectorFilename string
+	OmitInitializationVector     bool
 
 	CryptoMode cryptoMode
 }

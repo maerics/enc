@@ -23,6 +23,8 @@ type StreamingCodec struct {
 	Encoder func(io.Writer, *Options) io.WriteCloser
 }
 
+var base64UrlEncoding bool
+
 var streamingCodecs = []StreamingCodec{
 	{"ascii85", nil,
 		func(r io.Reader, o *Options) io.Reader { return ascii85.NewDecoder(wsiro(r, o)) },
@@ -54,6 +56,8 @@ func addStreamingCodecs(rootCmd *cobra.Command, options *Options) {
 		cmd.Run = transcodeStreaming(cmd, codec, options)
 
 		switch codec.Name {
+		case "base64":
+			cmd.Flags().BoolVarP(&base64UrlEncoding, "url", "u", base64UrlEncoding, "use URL safe encoding")
 		case "rot13":
 			cmd.Flags().Uint8VarP(&options.Offset, "offset", "r", 13, "offset for ROT13 transcoding")
 		case "xor":
@@ -74,6 +78,11 @@ func addStreamingCodecs(rootCmd *cobra.Command, options *Options) {
 
 func transcodeStreaming(_ *cobra.Command, codec StreamingCodec, o *Options) func(*cobra.Command, []string) {
 	return func(c *cobra.Command, s []string) {
+		if codec.Name == "base64" && base64UrlEncoding {
+			codec.Decoder = func(r io.Reader, o *Options) io.Reader { return base64.NewDecoder(base64.URLEncoding, wsiro(r, o)) }
+			codec.Encoder = func(w io.Writer, o *Options) io.WriteCloser { return base64.NewEncoder(base64.URLEncoding, w) }
+		}
+
 		ins := c.InOrStdin()
 		outs := wnc(c.OutOrStdout())
 

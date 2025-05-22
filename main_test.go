@@ -71,6 +71,9 @@ func TestKnownOutputs(t *testing.T) {
 		{[]string{"base64"}, []byte("OK!"), []byte("T0sh"), nil},
 		{[]string{"base64", "-D"}, []byte("T0sh"), []byte("OK!"), nil},
 		{[]string{"base64", "-d"}, []byte("T0sh"), []byte("OK!"), nil},
+		{[]string{"base64"}, []byte{0xff}, []byte("/w=="), nil},
+		{[]string{"base64", "--url"}, []byte{0xff}, []byte("_w=="), nil},
+		{[]string{"base64", "--url", "-d"}, []byte("_w=="), []byte{0xff}, nil},
 
 		// hex
 		{[]string{"hex"}, []byte(helloworld), []byte("48656c6c6f2c20576f726c6421"), nil},

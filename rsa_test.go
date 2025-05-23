@@ -30,9 +30,9 @@ func TestRsaGenerate(t *testing.T) {
 		{args: []string{"rsa", "generate"}},
 		{args: []string{"rsa", "generate", "-s1024"}, keySize: 1024},
 		{args: []string{"rsa", "generate", "-s", "1024"}, keySize: 1024},
-		{args: []string{"rsa", "generate", "--key-size=1024"}, keySize: 1024},
-		{args: []string{"rsa", "generate", "--key-size=2048"}, keySize: 2048},
-		{args: []string{"rsa", "generate", "--key-size=4096"}, keySize: 4096},
+		{args: []string{"rsa", "generate", "--size=1024"}, keySize: 1024},
+		{args: []string{"rsa", "generate", "--size=2048"}, keySize: 2048},
+		{args: []string{"rsa", "generate", "--size=4096"}, keySize: 4096},
 	} {
 		generateCmd := newEncCmd(getDefaultOptions())
 		generateCmd.SetArgs(eg.args)
@@ -133,7 +133,7 @@ func TestRsaExtract(t *testing.T) {
 	}{
 		{generateArgs: []string{"rsa", "generate", "--private-key", privateKeyFilename(0)}},
 		{generateArgs: []string{"rsa", "generate", "-s2048", "--private-key", privateKeyFilename(1)}},
-		{generateArgs: []string{"rsa", "generate", "--key-size=1024", "--private-key", privateKeyFilename(2)}},
+		{generateArgs: []string{"rsa", "generate", "--size=1024", "--private-key", privateKeyFilename(2)}},
 	} {
 		// Run the "rsa generate" command, store the private key to a file, and the public key in memory.
 		generateCmd := newEncCmd(getDefaultOptions())

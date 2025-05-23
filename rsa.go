@@ -171,7 +171,7 @@ func addGenerateCmd(rsaCmd *cobra.Command) {
 		Run: func(_ *cobra.Command, _ []string) {
 			privateKey, err := rsa.GenerateKey(rand.Reader, int(keySizeBits))
 			if err != nil {
-				log.Fatalf("FATAL: failed to generate RSA key pair of %v bits: %v", err, 2048)
+				log.Fatalf("FATAL: failed to generate RSA key with %v bits: %v", err, keySizeBits)
 			}
 
 			privateWriter := fileWriter(rsaCmd, FilenameDescriptionPrivateKey, privateFilename, true, 0400)
@@ -193,8 +193,8 @@ func addGenerateCmd(rsaCmd *cobra.Command) {
 		},
 	}
 
-	generateCmd.Flags().Uint32VarP(&keySizeBits, "key-size", "s", uint32(keySizeBits),
-		"key size in bits")
+	generateCmd.Flags().Uint32VarP(&keySizeBits, "size", "s", uint32(keySizeBits),
+		"private key size in bits")
 
 	generateCmd.Flags().StringVar(&privateFilename, "private-key", "-",
 		"file from which to read or write the private key")

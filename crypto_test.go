@@ -17,8 +17,12 @@ var knownErrors = map[string]func(algo, mode string, key, message, iv, ad []byte
 		switch true {
 		case mode == string(cryptoModeCBC):
 			return fmt.Errorf("mode %q not implemented", string(cryptoModeCBC))
+		case mode == string(cryptoModeCFB):
+			return fmt.Errorf("mode %q not implemented", string(cryptoModeCFB))
 		case mode == string(cryptoModeECB):
 			return fmt.Errorf("mode %q not implemented", string(cryptoModeECB))
+		case mode == string(cryptoModeOFB):
+			return fmt.Errorf("mode %q not implemented", string(cryptoModeOFB))
 		case !find(len(key), 16, 24, 32): // Key size must be {16,24,32}
 			return fmt.Errorf("failed to create AES cipher: crypto/aes: invalid key size %v", len(key))
 		case mode == string(cryptoModeBlock) && len(message) != len(key):
@@ -34,8 +38,12 @@ var knownErrors = map[string]func(algo, mode string, key, message, iv, ad []byte
 			return fmt.Errorf("unknown flag: --additional-data")
 		case mode == string(cryptoModeCBC):
 			return fmt.Errorf("mode %q not implemented", string(cryptoModeCBC))
+		case mode == string(cryptoModeCFB):
+			return fmt.Errorf("mode %q not implemented", string(cryptoModeCFB))
 		case mode == string(cryptoModeECB):
 			return fmt.Errorf("mode %q not implemented", string(cryptoModeECB))
+		case mode == string(cryptoModeOFB):
+			return fmt.Errorf("mode %q not implemented", string(cryptoModeOFB))
 		case len(key) != 8: // Key size must be 8
 			return fmt.Errorf("failed to create DES cipher: crypto/des: invalid key size %v", len(key))
 		case mode == string(cryptoModeGCM):

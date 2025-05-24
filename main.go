@@ -72,9 +72,9 @@ var version, commit, date, modified string
 
 func newEncCmd(options *Options) *cobra.Command {
 	printVersion := false
-	description := "Encrypt and encode between streams and files."
+	description := "Encrypt and encode data."
 	if options.Decode {
-		description = "Decrypt and decode between streams and files."
+		description = "Decrypt and decode data."
 	}
 
 	encCmd := &cobra.Command{

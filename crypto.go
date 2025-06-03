@@ -195,10 +195,10 @@ func encryptCTR(cipherName string, c cipher.Block, plaintext []byte, ciphertextW
 		if err != nil {
 			return fmt.Errorf(`failed to read "iv" file: %v`, err)
 		}
-		if len(iv) != len(bs) {
-			return fmt.Errorf("invalid initialization vector size %v for block size %v", len(bs), len(iv))
+		if len(bs) != c.BlockSize() {
+			return fmt.Errorf("invalid initialization vector size %v for block size %v", len(bs), c.BlockSize())
 		}
-		copy(iv, bs)
+		iv = bs
 	} else if _, err := io.ReadFull(rand.Reader, iv); err != nil {
 		return err
 	}
@@ -218,13 +218,26 @@ func encryptCTR(cipherName string, c cipher.Block, plaintext []byte, ciphertextW
 
 // CTR mode encryption.
 func decryptCTR(cipherName string, c cipher.Block, ciphertext []byte, plaintextWriter io.Writer, o *Options) error {
-	if o.InitializationVectorFilename != "" {
-		log.Printf("WARNING: ignoring unused %v flag for decoding", FlagNameIV)
+	var iv []byte
+	var plaintext []byte
+	offset := c.BlockSize()
+	if o.InitializationVectorFilename == "" {
+		iv = ciphertext[:offset]
+		plaintext = ciphertext[offset:]
+	} else {
+		bs, err := os.ReadFile(o.InitializationVectorFilename)
+		if err != nil {
+			return fmt.Errorf(`failed to read "iv" file: %v`, err)
+		}
+		if len(bs) != c.BlockSize() {
+			return fmt.Errorf("invalid initialization vector size %v for block size %v", len(bs), c.BlockSize())
+		}
+		iv = bs
+		plaintext = ciphertext
+		offset = 0
 	}
-	iv := ciphertext[:c.BlockSize()]
-	plaintext := ciphertext[c.BlockSize():]
 	stream := cipher.NewCTR(c, iv)
-	stream.XORKeyStream(plaintext, ciphertext[c.BlockSize():])
+	stream.XORKeyStream(plaintext, ciphertext[offset:])
 	if _, err := plaintextWriter.Write(plaintext); err != nil {
 		return fmt.Errorf("failed to write plaintext: %v", err)
 	}

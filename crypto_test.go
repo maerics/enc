@@ -6,9 +6,11 @@ import (
 	"crypto/rand"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path"
 	"reflect"
+	"slices"
 	"testing"
 )
 
@@ -101,7 +103,13 @@ func TestSymmetricCrypto(t *testing.T) {
 									continue
 								}
 							} else if expectedErr != nil {
-								t.Fatalf("unexpected encryption success: args=%#v, expected err=%v", args, expectedErr)
+								t.Fatalf("unexpected encryption success: args=%#v\nexpected err=%v", args, expectedErr)
+							}
+
+							// Remove special case decryption args.
+							if idx := slices.Index(args, "--iv"); idx >= 0 {
+								log.Printf("removing args %v/%v %#v/%#v", idx, idx+1, args[idx], args[idx+1])
+								args = slices.Delete(args, idx, idx+2)
 							}
 
 							// Decrypt.
@@ -128,7 +136,7 @@ func TestSymmetricCrypto(t *testing.T) {
 								t.Fatalf("roundtrip failed: args=%#v\nwanted %q (%#v)\nactual %q (%#v)",
 									args, string(message), message, string(plaintextBytes), plaintextBytes)
 							} else if expectedErr != nil {
-								t.Fatalf("unexpected roundtrip success: args=%#v, expected error %v", args, expectedErr)
+								t.Fatalf("unexpected roundtrip success: args=%#v\nexpected error %v", args, expectedErr)
 							}
 						}
 					}

@@ -43,7 +43,7 @@ func TestPadPKCS7(t *testing.T) {
 	}
 }
 
-func xTestUnpadPKCS7(t *testing.T) {
+func TestUnpadPKCS7(t *testing.T) {
 	for i, eg := range []struct {
 		input    []byte
 		expected []byte
@@ -55,7 +55,6 @@ func xTestUnpadPKCS7(t *testing.T) {
 		{[]byte("abc\x01"), []byte("abc"), nil},
 		{[]byte("abcd"), []byte("abcd"), nil},
 		{[]byte("0000abcd"), []byte("0000abcd"), nil},
-		{[]byte("0000abc"), []byte("0000abc\x01"), nil},
 		{[]byte("0000ab\x02\x02"), []byte("0000ab"), nil},
 		{[]byte("deadbeefx\x07\x07\x07\x07\x07\x07\x07"), []byte("deadbeefx"), nil},
 		{[]byte("deadbeef"), []byte("deadbeef"), nil},

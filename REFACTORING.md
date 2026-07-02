@@ -13,7 +13,10 @@ checked off, then merge to master and release.
       `encryptErr` is guaranteed nil there so `.Error()` would panic if this branch is
       ever actually hit
 - [x] Remove commented-out dead flag registration (codec_streaming.go, codec_buffered.go)
-- [ ] Reconcile `-D/--decrypt` vs `-d/--decode` duplication (main.go)
+- [x] ~~Reconcile `-D/--decrypt` vs `-d/--decode` duplication (main.go)~~ — deliberate:
+      dual "decrypt"/"decode" vocabulary matches the tool's transcode+transcrypt scope,
+      and `-d`/`-D` both working avoids case-sensitivity cognitive load. No change;
+      just document `-d` alongside `-D` in the README pass.
 - [ ] Make `rsa generate`/`extract` reuse the shared private/public key flag constants (rsa.go)
 - [ ] Resolve stale TODOs: crypto_modes.go shorthand-flag note, crypto.go GCM nonce comment
 

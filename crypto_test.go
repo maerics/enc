@@ -124,8 +124,8 @@ func TestSymmetricCrypto(t *testing.T) {
 							if decryptErr != nil {
 								if expectedErr == nil {
 									t.Fatalf("unexpected decryption error: args=%#v, err=%v", args, decryptErr)
-								} else if encryptErr.Error() != expectedErr.Error() {
-									t.Fatalf("decryption error: args=%#v\nwanted %q\nactual %q", args, expectedErr.Error(), encryptErr.Error())
+								} else if decryptErr.Error() != expectedErr.Error() {
+									t.Fatalf("decryption error: args=%#v\nwanted %q\nactual %q", args, expectedErr.Error(), decryptErr.Error())
 								} else {
 									continue
 								}

@@ -8,7 +8,7 @@ checked off, then merge to master and release.
 - [x] Remove duplicated nil-check block in `rsaEncrypt` (rsa.go)
 
 ## Cleanup / coherence
-- [ ] Fix `TestSymmetricCrypto` decrypt-error branch comparing `encryptErr` instead of
+- [x] Fix `TestSymmetricCrypto` decrypt-error branch comparing `encryptErr` instead of
       `decryptErr` (crypto_test.go ~127-128) — copy-paste bug from the encrypt branch;
       `encryptErr` is guaranteed nil there so `.Error()` would panic if this branch is
       ever actually hit

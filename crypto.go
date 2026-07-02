@@ -287,6 +287,9 @@ func decryptGCMAEAD(cipherName string, c cipher.Block, ciphertext []byte, plaint
 		return fmt.Errorf("failed to create new GCM AEAD: %v", err)
 	}
 	nonceSize := gcm.NonceSize()
+	if len(ciphertext) < nonceSize {
+		return fmt.Errorf("ciphertext too short: %v bytes, need at least %v for the nonce", len(ciphertext), nonceSize)
+	}
 	nonce := ciphertext[:nonceSize]
 	additionalData, err := readAdditionalData(o.AdditionalDataFilename)
 	if err != nil {

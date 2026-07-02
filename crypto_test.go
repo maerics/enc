@@ -174,6 +174,81 @@ func TestDecryptGCMAEADAdditionalDataReadError(t *testing.T) {
 	}
 }
 
+// Tampered ciphertext must fail GCM authentication rather than decrypting to
+// garbage plaintext.
+func TestDecryptGCMAEADTamperedCiphertextFails(t *testing.T) {
+	key := mustRand(32)
+	c, err := aes.NewCipher(key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gcm, err := cipher.NewGCM(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	nonce := mustRand(gcm.NonceSize())
+	sealed := gcm.Seal(nil, nonce, []byte("secret"), nil)
+	tampered := append(nonce, sealed...)
+	tampered[len(tampered)-1] ^= 0xff // flip a bit in the authentication tag
+
+	var out bytes.Buffer
+	err = decryptGCMAEAD("AES", c, tampered, &out, &Options{})
+	if err == nil {
+		t.Fatal("expected an authentication error for tampered ciphertext, got nil")
+	}
+	if out.Len() != 0 {
+		t.Fatalf("expected no plaintext written on authentication failure, got %q", out.String())
+	}
+}
+
+// Additional data used at decryption time must match what was used at
+// encryption time, or authentication must fail.
+func TestDecryptGCMAEADMismatchedAdditionalDataFails(t *testing.T) {
+	key := mustRand(32)
+	c, err := aes.NewCipher(key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gcm, err := cipher.NewGCM(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	nonce := mustRand(gcm.NonceSize())
+	sealed := gcm.Seal(nil, nonce, []byte("secret"), []byte("encrypt-time-ad"))
+	ciphertext := append(nonce, sealed...)
+
+	adFilename := path.Join(t.TempDir(), "decrypt-time-ad.dat")
+	mustWrite(t, adFilename, []byte("decrypt-time-ad"))
+
+	var out bytes.Buffer
+	err = decryptGCMAEAD("AES", c, ciphertext, &out, &Options{AdditionalDataFilename: adFilename})
+	if err == nil {
+		t.Fatal("expected an authentication error for mismatched additional data, got nil")
+	}
+	if out.Len() != 0 {
+		t.Fatalf("expected no plaintext written on authentication failure, got %q", out.String())
+	}
+}
+
+// A ciphertext shorter than the GCM nonce must return an error rather than
+// panicking on an out-of-range slice.
+func TestDecryptGCMAEADShortCiphertext(t *testing.T) {
+	key := mustRand(32)
+	c, err := aes.NewCipher(key)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var out bytes.Buffer
+	err = decryptGCMAEAD("AES", c, []byte("short"), &out, &Options{})
+	if err == nil {
+		t.Fatal("expected an error for ciphertext shorter than the nonce size, got nil")
+	}
+	if out.Len() != 0 {
+		t.Fatalf("expected no plaintext written on error, got %q", out.String())
+	}
+}
+
 var testKeys = [][]byte{
 	mustRand(8),
 	mustRand(16),

@@ -113,10 +113,6 @@ func rsaEncrypt(cmd *cobra.Command, o *Options) {
 		log.Fatalf("FATAL: missing or invalid value for %v flag %v=%q",
 			FilenameDescriptionPublicKey, "--"+FlagNamePublicKey, o.PublicKeyFilename)
 	}
-	if publicReader == nil {
-		log.Fatalf("FATAL: missing or invalid value for %v flag %v=%q",
-			FilenameDescriptionPublicKey, "--"+FlagNamePublicKey, o.PublicKeyFilename)
-	}
 
 	publicKeyBytes, err := io.ReadAll(publicReader)
 	if err != nil {

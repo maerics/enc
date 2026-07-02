@@ -5,7 +5,7 @@ checked off, then merge to master and release.
 
 ## Bugs
 - [x] Fix `decryptGCMAEAD` swallowing the `readAdditionalData` error (crypto.go)
-- [ ] Remove duplicated nil-check block in `rsaEncrypt` (rsa.go)
+- [x] Remove duplicated nil-check block in `rsaEncrypt` (rsa.go)
 
 ## Cleanup / coherence
 - [ ] Fix `TestSymmetricCrypto` decrypt-error branch comparing `encryptErr` instead of

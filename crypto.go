@@ -251,7 +251,9 @@ func encryptGCMAEAD(cipherName string, c cipher.Block, plaintext []byte, ciphert
 		return fmt.Errorf("failed to initialize GCM AEAD mode: %v", err)
 	}
 	nonceSize := gcm.NonceSize()
-	nonce := make([]byte, nonceSize) // TODO: is this the IV?
+	// GCM generates a fresh nonce per encryption and prepends it to the
+	// ciphertext; unlike CTR mode, it ignores the --iv/--omit-iv flags.
+	nonce := make([]byte, nonceSize)
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return fmt.Errorf("failed to generate nonce of size %v: %v", nonceSize, err)
 	}

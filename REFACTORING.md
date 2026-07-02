@@ -18,7 +18,7 @@ checked off, then merge to master and release.
       and `-d`/`-D` both working avoids case-sensitivity cognitive load. No change;
       just document `-d` alongside `-D` in the README pass.
 - [x] Make `rsa generate`/`extract` reuse the shared private/public key flag constants (rsa.go)
-- [ ] Resolve stale TODOs: crypto_modes.go shorthand-flag note, crypto.go GCM nonce comment
+- [x] Resolve stale TODOs: crypto_modes.go shorthand-flag note, crypto.go GCM nonce comment
 
 ## Tests
 - [ ] Add `xor/xor_test.go` (currently zero coverage; mirror rot13's pattern)

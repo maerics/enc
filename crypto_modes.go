@@ -6,12 +6,6 @@ import (
 	"strings"
 )
 
-// TODO
-// --mode={block,cbc,ecb,gcm,...}
-// --block (shorthand for "--mode=block")
-// --cbc (shorthand for "--mode=cbc")
-// etc
-
 type cryptoMode string
 
 const (

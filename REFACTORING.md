@@ -12,7 +12,7 @@ checked off, then merge to master and release.
       `decryptErr` (crypto_test.go ~127-128) — copy-paste bug from the encrypt branch;
       `encryptErr` is guaranteed nil there so `.Error()` would panic if this branch is
       ever actually hit
-- [ ] Remove commented-out dead flag registration (codec_streaming.go, codec_buffered.go)
+- [x] Remove commented-out dead flag registration (codec_streaming.go, codec_buffered.go)
 - [ ] Reconcile `-D/--decrypt` vs `-d/--decode` duplication (main.go)
 - [ ] Make `rsa generate`/`extract` reuse the shared private/public key flag constants (rsa.go)
 - [ ] Resolve stale TODOs: crypto_modes.go shorthand-flag note, crypto.go GCM nonce comment

@@ -192,10 +192,10 @@ func addGenerateCmd(rsaCmd *cobra.Command) {
 	generateCmd.Flags().Uint32VarP(&keySizeBits, "size", "s", uint32(keySizeBits),
 		"private key size in bits")
 
-	generateCmd.Flags().StringVar(&privateFilename, "private-key", "-",
+	generateCmd.Flags().StringVar(&privateFilename, FlagNamePrivateKey, "-",
 		"file from which to read or write the private key")
 
-	generateCmd.Flags().StringVar(&publicFilename, "public-key", "-",
+	generateCmd.Flags().StringVar(&publicFilename, FlagNamePublicKey, "-",
 		"file from which to read or write the public key")
 
 	rsaCmd.AddCommand(generateCmd)
@@ -233,10 +233,10 @@ func addExtractPublicKeyCmd(rsaCmd *cobra.Command) {
 		},
 	}
 
-	extractPublicKeyCmd.Flags().StringVar(&privateFilename, "private-key", "-",
+	extractPublicKeyCmd.Flags().StringVar(&privateFilename, FlagNamePrivateKey, "-",
 		"file from which to read or write the private key")
 
-	extractPublicKeyCmd.Flags().StringVar(&publicFilename, "public-key", "-",
+	extractPublicKeyCmd.Flags().StringVar(&publicFilename, FlagNamePublicKey, "-",
 		"file from which to read or write the public key")
 
 	rsaCmd.AddCommand(extractPublicKeyCmd)

@@ -17,7 +17,7 @@ checked off, then merge to master and release.
       dual "decrypt"/"decode" vocabulary matches the tool's transcode+transcrypt scope,
       and `-d`/`-D` both working avoids case-sensitivity cognitive load. No change;
       just document `-d` alongside `-D` in the README pass.
-- [ ] Make `rsa generate`/`extract` reuse the shared private/public key flag constants (rsa.go)
+- [x] Make `rsa generate`/`extract` reuse the shared private/public key flag constants (rsa.go)
 - [ ] Resolve stale TODOs: crypto_modes.go shorthand-flag note, crypto.go GCM nonce comment
 
 ## Tests

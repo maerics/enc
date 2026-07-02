@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"crypto/aes"
+	"crypto/cipher"
 	"crypto/rand"
 	"fmt"
 	"io"
@@ -143,6 +144,33 @@ func TestSymmetricCrypto(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// Regression test: a missing/unreadable "--additional-data" file must surface
+// as a decryption error rather than being silently swallowed.
+func TestDecryptGCMAEADAdditionalDataReadError(t *testing.T) {
+	key := mustRand(32)
+	c, err := aes.NewCipher(key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gcm, err := cipher.NewGCM(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	nonce := mustRand(gcm.NonceSize())
+	ciphertext := gcm.Seal(nil, nonce, []byte("secret"), nil)
+
+	o := &Options{AdditionalDataFilename: path.Join(t.TempDir(), "does-not-exist.dat")}
+
+	var out bytes.Buffer
+	err = decryptGCMAEAD("AES", c, append(nonce, ciphertext...), &out, o)
+	if err == nil {
+		t.Fatal("expected an error when the additional-data file cannot be read, got nil")
+	}
+	if out.Len() != 0 {
+		t.Fatalf("expected no plaintext written on error, got %q", out.String())
 	}
 }
 

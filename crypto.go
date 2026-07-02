@@ -290,7 +290,7 @@ func decryptGCMAEAD(cipherName string, c cipher.Block, ciphertext []byte, plaint
 	nonce := ciphertext[:nonceSize]
 	additionalData, err := readAdditionalData(o.AdditionalDataFilename)
 	if err != nil {
-		return nil
+		return err
 	}
 	plaintext, err := gcm.Open(nil, nonce, ciphertext[nonceSize:], additionalData)
 	if err != nil {

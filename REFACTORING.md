@@ -4,10 +4,14 @@ Tracked improvements for `enc`/`dec`. Delete this file once everything below is
 checked off, then merge to master and release.
 
 ## Bugs
-- [ ] Fix `decryptGCMAEAD` swallowing the `readAdditionalData` error (crypto.go)
+- [x] Fix `decryptGCMAEAD` swallowing the `readAdditionalData` error (crypto.go)
 - [ ] Remove duplicated nil-check block in `rsaEncrypt` (rsa.go)
 
 ## Cleanup / coherence
+- [ ] Fix `TestSymmetricCrypto` decrypt-error branch comparing `encryptErr` instead of
+      `decryptErr` (crypto_test.go ~127-128) — copy-paste bug from the encrypt branch;
+      `encryptErr` is guaranteed nil there so `.Error()` would panic if this branch is
+      ever actually hit
 - [ ] Remove commented-out dead flag registration (codec_streaming.go, codec_buffered.go)
 - [ ] Reconcile `-D/--decrypt` vs `-d/--decode` duplication (main.go)
 - [ ] Make `rsa generate`/`extract` reuse the shared private/public key flag constants (rsa.go)

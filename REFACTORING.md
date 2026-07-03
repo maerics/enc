@@ -21,7 +21,7 @@ checked off, then merge to master and release.
 - [x] Resolve stale TODOs: crypto_modes.go shorthand-flag note, crypto.go GCM nonce comment
 
 ## Tests
-- [ ] Add `xor/xor_test.go` (currently zero coverage; mirror rot13's pattern)
+- [x] Add `xor/xor_test.go` (currently zero coverage; mirror rot13's pattern)
 - [ ] Add unit tests for `cryptoMode`'s pflag.Value methods (crypto_modes.go)
 
 ## Efficiency

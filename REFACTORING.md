@@ -22,7 +22,7 @@ checked off, then merge to master and release.
 
 ## Tests
 - [x] Add `xor/xor_test.go` (currently zero coverage; mirror rot13's pattern)
-- [ ] Add unit tests for `cryptoMode`'s pflag.Value methods (crypto_modes.go)
+- [x] Add unit tests for `cryptoMode`'s pflag.Value methods (crypto_modes.go)
 
 ## Efficiency
 - [ ] Address O(n^2) whitespace-stripping note in `WhitespaceIgnoringReader` (helpers.go)

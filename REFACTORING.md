@@ -28,12 +28,12 @@ checked off, then merge to master and release.
 - [ ] Address O(n^2) whitespace-stripping note in `WhitespaceIgnoringReader` (helpers.go)
 
 ## Documentation
-- [ ] Fix stale/incorrect xor+base64 example ciphertext in README
-- [ ] Add des/des3 to README's command list and examples
-- [ ] Document `-d/--decode` and per-subcommand flags (aes mode/iv/omit-iv/additional-data,
+- [x] Fix stale/incorrect xor+base64 example ciphertext in README
+- [x] Add des/des3 to README's command list and examples
+- [x] Document `-d/--decode` and per-subcommand flags (aes mode/iv/omit-iv/additional-data,
       base58 check, universal append-newline, rsa extract) in README
-- [ ] Document that `caesar`/`rot` are aliases of `rot13`
-- [ ] Add LICENSE (MIT), matching .goreleaser.yml's Homebrew formula
+- [x] Document that `caesar`/`rot` are aliases of `rot13`
+- [x] Add LICENSE (MIT), matching .goreleaser.yml's Homebrew formula
 
 ## Tooling
 - [ ] Reconcile `enc version` vs `enc -v` into one path; follow JSON-default/--yaml convention

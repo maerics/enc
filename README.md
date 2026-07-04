@@ -26,7 +26,6 @@ Available Commands:
   hex         Encode input using HEX
   rot13       Encode input using ROT13
   rsa         Encrypt input using RSA public key
-  version     Print the current version
   xor         Encode input using XOR
 
 Flags:

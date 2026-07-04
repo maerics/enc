@@ -25,7 +25,7 @@ checked off, then merge to master and release.
 - [x] Add unit tests for `cryptoMode`'s pflag.Value methods (crypto_modes.go)
 
 ## Efficiency
-- [ ] Address O(n^2) whitespace-stripping note in `WhitespaceIgnoringReader` (helpers.go)
+- [x] Address O(n^2) whitespace-stripping note in `WhitespaceIgnoringReader` (helpers.go)
 
 ## Documentation
 - [x] Fix stale/incorrect xor+base64 example ciphertext in README
@@ -36,8 +36,9 @@ checked off, then merge to master and release.
 - [x] Add LICENSE (MIT), matching .goreleaser.yml's Homebrew formula
 
 ## Tooling
-- [ ] Reconcile `enc version` vs `enc -v` into one path; follow JSON-default/--yaml convention
-- [ ] Add `tidy` target to Makefile
+- [x] Reconcile `enc version` vs `enc -v` into one path — removed the `version`
+      subcommand; `-v` now prints the plain-text version string
+- [x] Add `tidy` target to Makefile
 
 ## Deferred (explicitly out of scope for this branch)
 - Implementing or removing the unadvertised-but-broken cbc/cfb/ecb/ofb crypto modes

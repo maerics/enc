@@ -24,6 +24,7 @@ Available Commands:
   des3        Encrypt input using 3DES
   help        Help about any command
   hex         Encode input using HEX
+  jwt         Sign input claims as a JWT
   rot13       Encode input using ROT13
   rsa         Encrypt input using RSA public key
   xor         Encode input using XOR
@@ -103,6 +104,36 @@ Extracts the public key from a private key.
 - `--private-key string` file to read the private key, default `-` (stdin)
 - `--public-key string` file to write the public key, default `-` (stdout)
 
+### jwt
+
+`enc jwt` reads a JSON claims object from stdin and writes a signed compact
+JWT to stdout. `dec jwt` (or `enc -D jwt`) reads a compact JWT from stdin,
+verifies its signature, and writes the decoded claims JSON to stdout. Pipe
+either direction to/from `jq` for anything fancier (building claims,
+inspecting `exp`/`nbf`, etc).
+
+- `-a, --alg string` signing algorithm, default `HS256`: `none, HS256, HS384,
+  HS512, RS256, RS384, RS512`
+- `-k, --key string` HMAC secret key filename, for `HS*` algorithms
+- `--private-key string` RSA private key filename, for signing with `RS*`
+  algorithms (same PKCS1 PEM format as `enc rsa`/`enc rsa generate`)
+- `--public-key string` RSA public key filename, for verifying `RS*`
+  algorithms
+- `--kid string` key ID to embed in the header when signing
+- `--claim key=value` set a claim when signing, repeatable; the value is
+  parsed as JSON when possible (e.g. `--claim admin=true` is boolean, `--claim
+  count=3` is a number), otherwise used as a raw string
+- `--expires-in duration` set the `exp` claim to now plus this duration when
+  signing (e.g. `1h30m`)
+- `--omit-iat` omit the automatic `iat` (issued at) claim when signing
+- `-n, --append-newline` append a trailing newline to the output
+
+When verifying, `--alg` (default `HS256`) must match the token's own header
+`alg`; a mismatch is rejected. This guards against algorithm-confusion
+attacks where a token claims a different or weaker algorithm than the caller
+expects, so always pass `--alg` explicitly when verifying tokens signed with
+anything other than `HS256`.
+
 ## Examples
 ```sh
 # Common encodings.
@@ -132,6 +163,16 @@ $ echo 'Hello, AES! 🔐' | enc aes --key=aes.key | dec aes --key=aes.key
 $ openssl rand 24 > des3.key
 $ echo 'Hello, 3DES! 🔐' | enc des3 --key=des3.key | dec des3 --key=des3.key
 # Hello, 3DES! 🔐
+
+# JWT signing/verification.
+$ openssl rand 32 > hmac.key
+$ echo '{"sub":"mike"}' | enc jwt --alg=HS256 --key=hmac.key --expires-in=1h \
+  | dec jwt --alg=HS256 --key=hmac.key
+# {"exp":...,"iat":...,"sub":"mike"}
+$ enc rsa generate --private-key=priv.key --public-key=pub.key
+$ echo '{"sub":"mike"}' | enc jwt --alg=RS256 --private-key=priv.key \
+  | dec jwt --alg=RS256 --public-key=pub.key
+# {"iat":...,"sub":"mike"}
 ```
 
 ## License

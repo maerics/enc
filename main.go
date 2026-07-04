@@ -107,6 +107,7 @@ func newEncCmd(options *Options) *cobra.Command {
 	addBufferedCodecs(encCmd, options)
 	addSymmetricCryptoCommands(encCmd, options)
 	addRSACommands(encCmd, options)
+	addJWTCommand(encCmd, options)
 
 	encCmd.Run = func(cmd *cobra.Command, args []string) {
 		if printVersion {

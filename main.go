@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -83,22 +82,6 @@ func newEncCmd(options *Options) *cobra.Command {
 		CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
 	}
 
-	versionCmd := &cobra.Command{
-		Use:               "version",
-		Aliases:           []string{"v"},
-		Short:             "Print the current version",
-		CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			bs, err := json.MarshalIndent(parseVersionInfo(), "", "  ")
-			if err != nil {
-				return err
-			}
-			fmt.Println(string(bs))
-			return nil
-		},
-	}
-
-	encCmd.AddCommand(versionCmd)
 	encCmd.Flags().BoolVarP(&printVersion, "version", "v", false, "print the current version")
 
 	// Setup global flags.
@@ -177,29 +160,9 @@ func setFilenameOptions(cmd *cobra.Command, options *Options) error {
 	return nil
 }
 
-type versionInfo struct {
-	Version   string `json:"version,omitempty"`
-	Commit    string `json:"commit,omitempty"`
-	Timestamp string `json:"timestamp,omitempty"`
-	Modified  string `json:"modified,omitempty"`
-}
-
-func parseVersionInfo() versionInfo {
-	return versionInfo{
-		Version:   version,
-		Commit:    commit,
-		Timestamp: date,
-		Modified:  modified,
-	}
-}
-
 func getVersionString() string {
-	versionInfo := parseVersionInfo()
-
-	if versionInfo.Version == "" {
+	if version == "" {
 		return "(unknown)"
 	}
-
-	return fmt.Sprintf("v%v, commit=%v, timestamp=%v",
-		versionInfo.Version, versionInfo.Commit, versionInfo.Timestamp)
+	return fmt.Sprintf("v%v, commit=%v, timestamp=%v", version, commit, date)
 }

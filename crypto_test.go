@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"crypto/aes"
+	"crypto/cipher"
 	"crypto/rand"
 	"fmt"
 	"io"
@@ -123,8 +124,8 @@ func TestSymmetricCrypto(t *testing.T) {
 							if decryptErr != nil {
 								if expectedErr == nil {
 									t.Fatalf("unexpected decryption error: args=%#v, err=%v", args, decryptErr)
-								} else if encryptErr.Error() != expectedErr.Error() {
-									t.Fatalf("decryption error: args=%#v\nwanted %q\nactual %q", args, expectedErr.Error(), encryptErr.Error())
+								} else if decryptErr.Error() != expectedErr.Error() {
+									t.Fatalf("decryption error: args=%#v\nwanted %q\nactual %q", args, expectedErr.Error(), decryptErr.Error())
 								} else {
 									continue
 								}
@@ -143,6 +144,108 @@ func TestSymmetricCrypto(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// Regression test: a missing/unreadable "--additional-data" file must surface
+// as a decryption error rather than being silently swallowed.
+func TestDecryptGCMAEADAdditionalDataReadError(t *testing.T) {
+	key := mustRand(32)
+	c, err := aes.NewCipher(key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gcm, err := cipher.NewGCM(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	nonce := mustRand(gcm.NonceSize())
+	ciphertext := gcm.Seal(nil, nonce, []byte("secret"), nil)
+
+	o := &Options{AdditionalDataFilename: path.Join(t.TempDir(), "does-not-exist.dat")}
+
+	var out bytes.Buffer
+	err = decryptGCMAEAD("AES", c, append(nonce, ciphertext...), &out, o)
+	if err == nil {
+		t.Fatal("expected an error when the additional-data file cannot be read, got nil")
+	}
+	if out.Len() != 0 {
+		t.Fatalf("expected no plaintext written on error, got %q", out.String())
+	}
+}
+
+// Tampered ciphertext must fail GCM authentication rather than decrypting to
+// garbage plaintext.
+func TestDecryptGCMAEADTamperedCiphertextFails(t *testing.T) {
+	key := mustRand(32)
+	c, err := aes.NewCipher(key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gcm, err := cipher.NewGCM(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	nonce := mustRand(gcm.NonceSize())
+	sealed := gcm.Seal(nil, nonce, []byte("secret"), nil)
+	tampered := append(nonce, sealed...)
+	tampered[len(tampered)-1] ^= 0xff // flip a bit in the authentication tag
+
+	var out bytes.Buffer
+	err = decryptGCMAEAD("AES", c, tampered, &out, &Options{})
+	if err == nil {
+		t.Fatal("expected an authentication error for tampered ciphertext, got nil")
+	}
+	if out.Len() != 0 {
+		t.Fatalf("expected no plaintext written on authentication failure, got %q", out.String())
+	}
+}
+
+// Additional data used at decryption time must match what was used at
+// encryption time, or authentication must fail.
+func TestDecryptGCMAEADMismatchedAdditionalDataFails(t *testing.T) {
+	key := mustRand(32)
+	c, err := aes.NewCipher(key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gcm, err := cipher.NewGCM(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	nonce := mustRand(gcm.NonceSize())
+	sealed := gcm.Seal(nil, nonce, []byte("secret"), []byte("encrypt-time-ad"))
+	ciphertext := append(nonce, sealed...)
+
+	adFilename := path.Join(t.TempDir(), "decrypt-time-ad.dat")
+	mustWrite(t, adFilename, []byte("decrypt-time-ad"))
+
+	var out bytes.Buffer
+	err = decryptGCMAEAD("AES", c, ciphertext, &out, &Options{AdditionalDataFilename: adFilename})
+	if err == nil {
+		t.Fatal("expected an authentication error for mismatched additional data, got nil")
+	}
+	if out.Len() != 0 {
+		t.Fatalf("expected no plaintext written on authentication failure, got %q", out.String())
+	}
+}
+
+// A ciphertext shorter than the GCM nonce must return an error rather than
+// panicking on an out-of-range slice.
+func TestDecryptGCMAEADShortCiphertext(t *testing.T) {
+	key := mustRand(32)
+	c, err := aes.NewCipher(key)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var out bytes.Buffer
+	err = decryptGCMAEAD("AES", c, []byte("short"), &out, &Options{})
+	if err == nil {
+		t.Fatal("expected an error for ciphertext shorter than the nonce size, got nil")
+	}
+	if out.Len() != 0 {
+		t.Fatalf("expected no plaintext written on error, got %q", out.String())
 	}
 }
 

@@ -23,8 +23,6 @@ type StreamingCodec struct {
 	Encoder func(io.Writer, *Options) io.WriteCloser
 }
 
-var base64UrlEncoding bool
-
 var streamingCodecs = []StreamingCodec{
 	{"ascii85", nil,
 		func(r io.Reader, o *Options) io.Reader { return ascii85.NewDecoder(wsiro(r, o)) },
@@ -53,18 +51,23 @@ func addStreamingCodecs(rootCmd *cobra.Command, options *Options) {
 			Aliases: codec.Aliases,
 			Short:   fmt.Sprintf("%v input using %v", options.ActionName, strings.ToUpper(codec.Name)),
 		}
-		cmd.Run = transcodeStreaming(cmd, codec, options)
+
+		var base64UrlEncoding bool
+		padChar, noPad := "=", false
 
 		switch codec.Name {
 		case "base64":
-			cmd.Flags().BoolVarP(&base64UrlEncoding, "url", "u", base64UrlEncoding, "use URL safe encoding")
+			cmd.Flags().BoolVarP(&base64UrlEncoding, "url", "u", false, "use URL safe encoding")
+			cmd.Flags().StringVar(&padChar, "pad", padChar, "padding character")
+			cmd.Flags().BoolVar(&noPad, "no-pad", false, "disable padding")
+		case "base32":
+			cmd.Flags().StringVar(&padChar, "pad", padChar, "padding character")
+			cmd.Flags().BoolVar(&noPad, "no-pad", false, "disable padding")
 		case "rot13":
 			cmd.Flags().Uint8VarP(&options.Offset, "offset", "r", 13, "offset for ROT13 transcoding")
 		case "xor":
 			cmd.Flags().StringVarP(&options.Key, "key", "k", "", "key filename for xor transcoding")
 		}
-		// cmd.Flags().BoolVarP(&options.Decode, "decode", "d", options.Decode,
-		// 	fmt.Sprintf("decode input from %q to binary", codec.Name))
 		cmd.Flags().BoolVarP(&options.IgnoreWhitespace,
 			"ignore-whitespace", "w", options.IgnoreWhitespace,
 			"ignore whitespace characters when decoding")
@@ -72,40 +75,70 @@ func addStreamingCodecs(rootCmd *cobra.Command, options *Options) {
 			"append-newline", "n", options.AppendNewline,
 			"append a trailing newline to the output")
 
+		cmd.Run = func(c *cobra.Command, s []string) {
+			switch codec.Name {
+			case "base64":
+				pad, err := parsePad(padChar, noPad)
+				if err != nil {
+					log.Fatalf("FATAL: %v", err)
+				}
+				enc := base64.StdEncoding
+				if base64UrlEncoding {
+					enc = base64.URLEncoding
+				}
+				enc = enc.WithPadding(pad)
+				codec.Decoder = func(r io.Reader, o *Options) io.Reader { return base64.NewDecoder(enc, wsiro(r, o)) }
+				codec.Encoder = func(w io.Writer, o *Options) io.WriteCloser { return base64.NewEncoder(enc, w) }
+			case "base32":
+				pad, err := parsePad(padChar, noPad)
+				if err != nil {
+					log.Fatalf("FATAL: %v", err)
+				}
+				enc := base32.StdEncoding.WithPadding(pad)
+				codec.Decoder = func(r io.Reader, o *Options) io.Reader { return base32.NewDecoder(enc, wsiro(r, o)) }
+				codec.Encoder = func(w io.Writer, o *Options) io.WriteCloser { return base32.NewEncoder(enc, w) }
+			}
+			transcodeStreaming(c, codec, options)
+		}
+
 		rootCmd.AddCommand(cmd)
 	}
 }
 
-func transcodeStreaming(_ *cobra.Command, codec StreamingCodec, o *Options) func(*cobra.Command, []string) {
-	return func(c *cobra.Command, s []string) {
-		if codec.Name == "base64" && base64UrlEncoding {
-			codec.Decoder = func(r io.Reader, o *Options) io.Reader { return base64.NewDecoder(base64.URLEncoding, wsiro(r, o)) }
-			codec.Encoder = func(w io.Writer, o *Options) io.WriteCloser { return base64.NewEncoder(base64.URLEncoding, w) }
-		}
+func transcodeStreaming(c *cobra.Command, codec StreamingCodec, o *Options) {
+	ins := c.InOrStdin()
+	outs := wnc(c.OutOrStdout())
 
-		ins := c.InOrStdin()
-		outs := wnc(c.OutOrStdout())
+	var in io.Reader = ins
+	var out io.WriteCloser = outs
+	if o.Decode {
+		in = codec.Decoder(ins, o)
+	} else {
+		out = codec.Encoder(outs, o)
+	}
 
-		var in io.Reader = ins
-		var out io.WriteCloser = outs
-		if o.Decode {
-			in = codec.Decoder(ins, o)
-		} else {
-			out = codec.Encoder(outs, o)
-		}
-
-		if _, err := io.Copy(out, in); err != nil {
-			log.Fatalf("FATAL: transcoding failed: %v", err)
-		}
-		if err := out.Close(); err != nil {
-			log.Fatalf("FATAL: failed to close output stream: %v", err)
-		}
-		if o.AppendNewline {
-			if _, err := outs.Write([]byte{'\n'}); err != nil {
-				log.Fatalf("FATAL: failed to append trailing newline: %v", err)
-			}
+	if _, err := io.Copy(out, in); err != nil {
+		log.Fatalf("FATAL: transcoding failed: %v", err)
+	}
+	if err := out.Close(); err != nil {
+		log.Fatalf("FATAL: failed to close output stream: %v", err)
+	}
+	if o.AppendNewline {
+		if _, err := outs.Write([]byte{'\n'}); err != nil {
+			log.Fatalf("FATAL: failed to append trailing newline: %v", err)
 		}
 	}
+}
+
+func parsePad(padChar string, noPad bool) (rune, error) {
+	if noPad {
+		return base64.NoPadding, nil
+	}
+	rs := []rune(padChar)
+	if len(rs) != 1 {
+		return 0, fmt.Errorf("invalid --pad value %q: must be exactly one character", padChar)
+	}
+	return rs[0], nil
 }
 
 func xorNewDecoderO(r io.Reader, o *Options) io.Reader {

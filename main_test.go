@@ -62,6 +62,9 @@ func TestKnownOutputs(t *testing.T) {
 		// base32
 		{[]string{"base32"}, []byte(helloworld), []byte("JBSWY3DPFQQFO33SNRSCC==="), nil},
 		{[]string{"base32", "-d"}, []byte("JBSWY3DPFQQFO33SNRSCC==="), []byte(helloworld), nil},
+		{[]string{"base32", "--no-pad"}, []byte(helloworld), []byte("JBSWY3DPFQQFO33SNRSCC"), nil},
+		{[]string{"base32", "--no-pad", "-d"}, []byte("JBSWY3DPFQQFO33SNRSCC"), []byte(helloworld), nil},
+		{[]string{"base32", "--pad=*"}, []byte(helloworld), []byte("JBSWY3DPFQQFO33SNRSCC***"), nil},
 
 		// base58
 		{[]string{"base58"}, []byte("OK\n"), []byte("Tdkm"), nil},
@@ -74,6 +77,9 @@ func TestKnownOutputs(t *testing.T) {
 		{[]string{"base64"}, []byte{0xff}, []byte("/w=="), nil},
 		{[]string{"base64", "--url"}, []byte{0xff}, []byte("_w=="), nil},
 		{[]string{"base64", "--url", "-d"}, []byte("_w=="), []byte{0xff}, nil},
+		{[]string{"base64", "--no-pad"}, []byte{0xff}, []byte("/w"), nil},
+		{[]string{"base64", "--no-pad", "-d"}, []byte("/w"), []byte{0xff}, nil},
+		{[]string{"base64", "--pad=*"}, []byte{0xff}, []byte("/w**"), nil},
 
 		// hex
 		{[]string{"hex"}, []byte(helloworld), []byte("48656c6c6f2c20576f726c6421"), nil},

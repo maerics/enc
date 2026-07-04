@@ -1,4 +1,4 @@
-test: fmt vet
+test: tidy fmt vet
 	go test ./...
 
 fmt:
@@ -6,6 +6,9 @@ fmt:
 
 vet:
 	go vet ./...
+
+tidy:
+	go mod tidy
 
 BUILD_VERSION = $(shell git describe --exact-match --tags)
 BUILD_COMMIT = $(shell git rev-parse head)

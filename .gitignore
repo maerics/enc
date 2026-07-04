@@ -3,3 +3,4 @@ dec
 dist/
 *.dat
 *.key
+*.jwt

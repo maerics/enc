@@ -2,8 +2,8 @@
 
 Encode and encrypt data.
 
-`enc` encodes/encrypts by default; the `-d`/`-D` flags decode/decrypt. A
-`dec` symlink (or copy) of the same binary decodes/decrypts by default.
+`enc` encodes/encrypts by default; the `-d`/`-D` flags decode.
+A `dec` symlink (or copy) of the same binary decodes by default.
 
 ## Usage
 

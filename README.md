@@ -53,6 +53,11 @@ Every codec subcommand supports:
 `base64` additionally supports `-u, --url` to use URL-safe encoding instead
 of standard encoding.
 
+`base64` and `base32` additionally support:
+
+- `--pad string` padding character, default `=`
+- `--no-pad` disable padding entirely (`--no-pad` wins if both are given)
+
 `rot13` (aliases: `rot`, `caesar`) additionally supports:
 
 - `-r, --offset uint8` rotation offset, default `13`

@@ -40,6 +40,10 @@ checked off, then merge to master and release.
       subcommand; `-v` now prints the plain-text version string
 - [x] Add `tidy` target to Makefile
 
+## Features
+- [x] Add `--no-pad` and `--pad=CHAR` flags to `base64`/`base32` (default pad
+      character `=`, matching stdlib default; `--no-pad` disables padding)
+
 ## Deferred (explicitly out of scope for this branch)
 - Implementing or removing the unadvertised-but-broken cbc/cfb/ecb/ofb crypto modes
   and the orphaned `padding/pkcs7` package

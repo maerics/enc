@@ -134,8 +134,10 @@ verifies its signature, and writes the decoded claims JSON to stdout. Pipe
 either direction to/from `jq` for anything fancier (building claims,
 inspecting `exp`/`nbf`, etc).
 
-- `-a, --alg string` signing algorithm, default `HS256`: `none, HS256, HS384,
-  HS512, RS256, RS384, RS512`
+- `-a, --alg string` signing/verifying algorithm: `none, HS256, HS384, HS512,
+  RS256, RS384, RS512`; when signing, defaults to `HS256`; when verifying, if
+  omitted, it is taken from the token's own `alg` header (or `HS256` if that
+  header is missing)
 - `-k, --key string` HMAC secret key filename, for `HS*` algorithms
 - `--private-key string` RSA private key filename, for signing with `RS*`
   algorithms (same PKCS1 PEM format as `enc rsa`/`enc rsa generate`)
@@ -150,11 +152,12 @@ inspecting `exp`/`nbf`, etc).
 - `--omit-iat` omit the automatic `iat` (issued at) claim when signing
 - `-n, --append-newline` append a trailing newline to the output
 
-When verifying, `--alg` (default `HS256`) must match the token's own header
-`alg`; a mismatch is rejected. This guards against algorithm-confusion
-attacks where a token claims a different or weaker algorithm than the caller
-expects, so always pass `--alg` explicitly when verifying tokens signed with
-anything other than `HS256`.
+When verifying, if `--alg` is passed explicitly it must match the token's own
+header `alg`; a mismatch is rejected. If `--alg` is omitted, the algorithm is
+taken from the token's header instead, which is convenient but exposes
+algorithm-confusion attacks where a token claims a different or weaker
+algorithm than the caller expects. Always pass `--alg` explicitly when
+verifying tokens from an untrusted source.
 
 ## Examples
 ```sh

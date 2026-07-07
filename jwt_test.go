@@ -211,6 +211,34 @@ func TestJWTDefaultAlgIsHS256(t *testing.T) {
 	}
 }
 
+func TestJWTVerifyAutoDetectsAlgFromHeader(t *testing.T) {
+	tempDir := t.TempDir()
+	keyFilename := path.Join(tempDir, "hmac.key")
+	if err := os.WriteFile(keyFilename, []byte("super-secret"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	token, _, err := runJWTCmd(t,
+		[]string{"jwt", "--alg=HS512", "--key", keyFilename}, `{"sub":"alice"}`)
+	if err != nil {
+		t.Fatalf("sign failed: %v", err)
+	}
+
+	// No --alg flag on verify: should auto-detect HS512 from the header
+	// rather than defaulting to HS256.
+	claimsOut, _, err := runJWTCmd(t, []string{"jwt", "-d", "--key", keyFilename}, token)
+	if err != nil {
+		t.Fatalf("verify with auto-detected alg failed: %v", err)
+	}
+	var claims map[string]any
+	if err := json.Unmarshal([]byte(claimsOut), &claims); err != nil {
+		t.Fatalf("invalid claims JSON %q: %v", claimsOut, err)
+	}
+	if claims["sub"] != "alice" {
+		t.Fatalf("unexpected claims: %v", claims)
+	}
+}
+
 func TestJWTInvalidAlgRejected(t *testing.T) {
 	if _, _, err := runJWTCmd(t, []string{"jwt", "--alg=bogus"}, `{}`); err == nil {
 		t.Fatal("expected error for invalid --alg, got nil")

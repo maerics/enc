@@ -73,20 +73,25 @@ func addJWTCommand(rootCmd *cobra.Command, o *Options) {
 		Short: short,
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			alg, ok := jwtAlgorithms[algName]
+			if o.Decode {
+				return jwtVerifyCmd(cmd, o, algName)
+			}
+			signAlgName := algName
+			if signAlgName == "" {
+				signAlgName = "HS256"
+			}
+			alg, ok := jwtAlgorithms[signAlgName]
 			if !ok {
 				return fmt.Errorf("invalid %q flag %q: must be one of %v",
-					"--"+FlagNameAlg, algName, strings.Join(jwtAlgNames, ", "))
-			}
-			if o.Decode {
-				return jwtVerifyCmd(cmd, o, alg)
+					"--"+FlagNameAlg, signAlgName, strings.Join(jwtAlgNames, ", "))
 			}
 			return jwtSignCmd(cmd, o, alg, kid, claims, expiresIn, omitIat)
 		},
 	}
 
-	cmd.Flags().StringVarP(&algName, FlagNameAlg, "a", "HS256",
-		"signing algorithm: "+strings.Join(jwtAlgNames, ", "))
+	cmd.Flags().StringVarP(&algName, FlagNameAlg, "a", "",
+		"signing algorithm: "+strings.Join(jwtAlgNames, ", ")+
+			` (default "HS256" when signing; when verifying, taken from the token's "alg" header, default "HS256")`)
 	cmd.Flags().StringVarP(&o.KeyFilename, FlagNameKey, "k", "",
 		"HMAC secret key filename (for HS* algorithms)")
 	cmd.Flags().StringVar(&o.PrivateKeyFilename, FlagNamePrivateKey, "",
@@ -182,14 +187,7 @@ func jwtSignCmd(cmd *cobra.Command, o *Options, alg jwtAlg, kid string, claimFla
 	return nil
 }
 
-func jwtVerifyCmd(cmd *cobra.Command, o *Options, alg jwtAlg) error {
-	warnIrrelevantJWTKeyFlags(alg, o)
-
-	hmacKey, publicKey, err := jwtResolveVerifyingKey(cmd, o, alg)
-	if err != nil {
-		return err
-	}
-
+func jwtVerifyCmd(cmd *cobra.Command, o *Options, algName string) error {
 	input, err := io.ReadAll(cmd.InOrStdin())
 	if err != nil {
 		return fmt.Errorf("failed to read token from input: %v", err)
@@ -210,8 +208,36 @@ func jwtVerifyCmd(cmd *cobra.Command, o *Options, alg jwtAlg) error {
 	if err := json.Unmarshal(headerJSON, &header); err != nil {
 		return fmt.Errorf("failed to parse header JSON: %v", err)
 	}
-	if header.Alg != alg.Name {
-		return fmt.Errorf("token alg %q does not match expected %v=%q", header.Alg, "--"+FlagNameAlg, alg.Name)
+
+	var alg jwtAlg
+	if algName != "" {
+		var ok bool
+		alg, ok = jwtAlgorithms[algName]
+		if !ok {
+			return fmt.Errorf("invalid %q flag %q: must be one of %v",
+				"--"+FlagNameAlg, algName, strings.Join(jwtAlgNames, ", "))
+		}
+		if header.Alg != alg.Name {
+			return fmt.Errorf("token alg %q does not match expected %v=%q", header.Alg, "--"+FlagNameAlg, alg.Name)
+		}
+	} else {
+		autoAlgName := header.Alg
+		if autoAlgName == "" {
+			autoAlgName = "HS256"
+		}
+		var ok bool
+		alg, ok = jwtAlgorithms[autoAlgName]
+		if !ok {
+			return fmt.Errorf(`token has unsupported "alg" header %q: must be one of %v`,
+				autoAlgName, strings.Join(jwtAlgNames, ", "))
+		}
+	}
+
+	warnIrrelevantJWTKeyFlags(alg, o)
+
+	hmacKey, publicKey, err := jwtResolveVerifyingKey(cmd, o, alg)
+	if err != nil {
+		return err
 	}
 
 	sig, err := base64.RawURLEncoding.DecodeString(parts[2])

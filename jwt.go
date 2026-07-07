@@ -312,8 +312,11 @@ func jwtVerify(cmd *cobra.Command, o *Options, alg jwtAlg, signingInput, sig []b
 }
 
 func jwtReadHMACKey(o *Options) ([]byte, error) {
-	if o.KeyFilename == "" || isStd(o.KeyFilename) {
+	if o.KeyFilename == "" {
 		return nil, fmt.Errorf(`missing required %q flag`, "--"+FlagNameKey)
+	}
+	if isStd(o.KeyFilename) {
+		return nil, fmt.Errorf(`the %q flag does not support "-" (stdin); provide a file path`, "--"+FlagNameKey)
 	}
 	key, err := os.ReadFile(o.KeyFilename)
 	if err != nil {

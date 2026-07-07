@@ -94,6 +94,9 @@ func encrypt(cmd *cobra.Command, o *Options, cipherName string, cipherFunc func(
 		return fmt.Errorf(`missing required "--%v" flag`, FlagNameKey)
 	}
 	keyReader := fileReader(cmd, FlagNameKey, o.KeyFilename, false)
+	if keyReader == nil {
+		return fmt.Errorf(`the "--%v" flag does not support "-" (stdin); provide a file path`, FlagNameKey)
+	}
 	key, err := io.ReadAll(keyReader)
 	if err != nil {
 		return fmt.Errorf("failed to read all key bytes: %v", err)
@@ -138,6 +141,9 @@ func decrypt(cmd *cobra.Command, o *Options, cipherName string, cipherFunc func(
 		return fmt.Errorf(`missing required "--%v" flag`, FlagNameKey)
 	}
 	keyReader := fileReader(cmd, FlagNameKey, o.KeyFilename, false)
+	if keyReader == nil {
+		return fmt.Errorf(`the "--%v" flag does not support "-" (stdin); provide a file path`, FlagNameKey)
+	}
 	key, err := io.ReadAll(keyReader)
 	if err != nil {
 		return fmt.Errorf("failed to read all key bytes: %v", err)
@@ -191,6 +197,9 @@ func encryptCTR(cipherName string, c cipher.Block, plaintext []byte, ciphertextW
 	iv := make([]byte, c.BlockSize())
 	ciphertext := make([]byte, len(plaintext))
 	if o.InitializationVectorFilename != "" {
+		if o.InitializationVectorFilename == "-" {
+			return fmt.Errorf(`the "--%v" flag does not support "-" (stdin); provide a file path`, FlagNameIV)
+		}
 		bs, err := os.ReadFile(o.InitializationVectorFilename)
 		if err != nil {
 			return fmt.Errorf(`failed to read "iv" file: %v`, err)
@@ -224,6 +233,8 @@ func decryptCTR(cipherName string, c cipher.Block, ciphertext []byte, plaintextW
 	if o.InitializationVectorFilename == "" {
 		iv = ciphertext[:offset]
 		plaintext = ciphertext[offset:]
+	} else if o.InitializationVectorFilename == "-" {
+		return fmt.Errorf(`the "--%v" flag does not support "-" (stdin); provide a file path`, FlagNameIV)
 	} else {
 		bs, err := os.ReadFile(o.InitializationVectorFilename)
 		if err != nil {
@@ -273,6 +284,9 @@ func encryptGCMAEAD(cipherName string, c cipher.Block, plaintext []byte, ciphert
 
 func readAdditionalData(filename string) ([]byte, error) {
 	if filename != "" {
+		if filename == "-" {
+			return nil, fmt.Errorf(`the "--additional-data" flag does not support "-" (stdin); provide a file path`)
+		}
 		bs, err := os.ReadFile(filename)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read additional data from %q: %v", filename, err)

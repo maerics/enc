@@ -12,6 +12,7 @@ import (
 	"path"
 	"reflect"
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -246,6 +247,58 @@ func TestDecryptGCMAEADShortCiphertext(t *testing.T) {
 	}
 	if out.Len() != 0 {
 		t.Fatalf("expected no plaintext written on error, got %q", out.String())
+	}
+}
+
+// Regression test: "--key=-" must not be allowed to fall through to
+// io.ReadAll on a nil reader (a panic); it must fail with a clear error.
+func TestSymmetricCryptoKeyDashRejected(t *testing.T) {
+	for _, algo := range []string{"aes", "des", "des3"} {
+		for _, args := range [][]string{
+			{algo, "--key", "-"},
+			{algo, "--decrypt", "--key", "-"},
+		} {
+			cmd := newEncCmd(getDefaultOptions())
+			cmd.SetArgs(args)
+			cmd.SetIn(bytes.NewReader([]byte("secret!!")))
+			cmd.SetOut(new(bytes.Buffer))
+			cmd.SetErr(new(bytes.Buffer))
+			err := cmd.Execute()
+			if err == nil {
+				t.Fatalf("args=%#v: expected an error for \"--key=-\", got nil", args)
+			}
+			if !strings.Contains(err.Error(), `does not support "-"`) {
+				t.Fatalf("args=%#v: expected a \"does not support -\" error, got %q", args, err.Error())
+			}
+		}
+	}
+}
+
+// Regression test: "--iv=-" and "--additional-data=-" must fail with a clear
+// error instead of a confusing "open -: no such file" OS error.
+func TestSymmetricCryptoIVAndAdditionalDataDashRejected(t *testing.T) {
+	aesKeyFilename := path.Join(t.TempDir(), "aes.key")
+	mustWrite(t, aesKeyFilename, mustRand(32))
+	des3KeyFilename := path.Join(t.TempDir(), "des3.key")
+	mustWrite(t, des3KeyFilename, mustRand(24))
+
+	for _, args := range [][]string{
+		{"aes", "--mode", "ctr", "--key", aesKeyFilename, "--iv", "-"},
+		{"aes", "--key", aesKeyFilename, "--additional-data", "-"},
+		{"des3", "--key", des3KeyFilename, "--iv", "-"},
+	} {
+		cmd := newEncCmd(getDefaultOptions())
+		cmd.SetArgs(args)
+		cmd.SetIn(bytes.NewReader([]byte("secret!!")))
+		cmd.SetOut(new(bytes.Buffer))
+		cmd.SetErr(new(bytes.Buffer))
+		err := cmd.Execute()
+		if err == nil {
+			t.Fatalf("args=%#v: expected an error, got nil", args)
+		}
+		if !strings.Contains(err.Error(), `does not support "-"`) {
+			t.Fatalf("args=%#v: expected a \"does not support -\" error, got %q", args, err.Error())
+		}
 	}
 }
 

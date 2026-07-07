@@ -145,6 +145,9 @@ func xorNewDecoderO(r io.Reader, o *Options) io.Reader {
 	if o.Key == "" {
 		log.Fatalf(`FATAL: missing required flag "--key=KEY_FILENAME"`)
 	}
+	if o.Key == "-" {
+		log.Fatalf(`FATAL: the "--key" flag does not support "-" (stdin); provide a file path`)
+	}
 	key, err := os.ReadFile(o.Key)
 	if err != nil {
 		log.Fatalf("FATAL: %v", err)
@@ -158,6 +161,9 @@ func xorNewDecoderO(r io.Reader, o *Options) io.Reader {
 func xorNewEncoderO(w io.Writer, o *Options) io.Writer {
 	if o.Key == "" {
 		log.Fatalf(`FATAL: missing required flag "--key=KEY_FILENAME"`)
+	}
+	if o.Key == "-" {
+		log.Fatalf(`FATAL: the "--key" flag does not support "-" (stdin); provide a file path`)
 	}
 	key, err := os.ReadFile(o.Key)
 	if err != nil {

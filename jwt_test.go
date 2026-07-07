@@ -118,6 +118,26 @@ func TestJWTNoneAlg(t *testing.T) {
 	}
 }
 
+// Regression test: "--key=-" for an HMAC alg must be rejected with a
+// message distinct from the "flag omitted" case.
+func TestJWTHMACKeyDashRejected(t *testing.T) {
+	_, _, err := runJWTCmd(t, []string{"jwt", "--alg=HS256", "--key", "-"}, `{}`)
+	if err == nil {
+		t.Fatal(`expected an error for "--key=-", got nil`)
+	}
+	if !strings.Contains(err.Error(), `does not support "-"`) {
+		t.Fatalf(`expected a "does not support -" error, got %q`, err.Error())
+	}
+
+	_, _, err = runJWTCmd(t, []string{"jwt", "--alg=HS256"}, `{}`)
+	if err == nil {
+		t.Fatal("expected an error for the omitted --key flag, got nil")
+	}
+	if !strings.Contains(err.Error(), "missing required") {
+		t.Fatalf(`expected a "missing required" error, got %q`, err.Error())
+	}
+}
+
 func TestJWTAlgMismatchRejected(t *testing.T) {
 	tempDir := t.TempDir()
 	keyFilename := path.Join(tempDir, "hmac.key")

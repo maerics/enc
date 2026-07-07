@@ -104,6 +104,28 @@ Extracts the public key from a private key.
 - `--private-key string` file to read the private key, default `-` (stdin)
 - `--public-key string` file to write the public key, default `-` (stdout)
 
+#### rsa sign
+
+Signs input from stdin using an RSA private key; writes the raw signature
+bytes to stdout.
+
+- `--private-key string` private key filename
+- `-k, --key string` private key filename, equivalent to `--private-key`
+- `-a, --hash string` hash algorithm, default `sha256`: `sha256, sha384,
+  sha512`
+
+#### rsa verify
+
+Verifies input from stdin against a signature file using an RSA public key.
+On success, writes the input back to stdout unchanged; on failure, exits
+non-zero and writes nothing to stdout.
+
+- `--public-key string` public key filename
+- `-k, --key string` public key filename, equivalent to `--public-key`
+- `-a, --hash string` hash algorithm, default `sha256`: `sha256, sha384,
+  sha512`
+- `-s, --signature string` signature filename (required)
+
 ### jwt
 
 `enc jwt` reads a JSON claims object from stdin and writes a signed compact
@@ -153,6 +175,11 @@ $ echo MhEXEwYfK3k= | enc -D base64 | enc -D xor --key=/tmp/secret.txt
 $ enc rsa generate --private-key=priv.key --public-key=pub.key
 $ echo 'Hello, RSA! 🔐' | enc rsa --key=pub.key | dec rsa --key=priv.key
 # Hello, RSA! 🔐 
+
+# RSA sign/verify.
+$ echo 'Hello, RSA! 🔐' | enc rsa sign --key=priv.key > msg.sig
+$ echo 'Hello, RSA! 🔐' | enc rsa verify --key=pub.key --signature=msg.sig
+# Hello, RSA! 🔐
 
 # AES Encryption.
 $ openssl rand 32 > aes.key

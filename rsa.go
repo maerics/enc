@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -58,6 +59,8 @@ func addRSACommands(rootCmd *cobra.Command, o *Options) {
 
 	addGenerateCmd(rsaCmd)
 	addExtractPublicKeyCmd(rsaCmd)
+	addSignCmd(rsaCmd)
+	addVerifyCmd(rsaCmd)
 	rootCmd.AddCommand(rsaCmd)
 }
 
@@ -276,4 +279,40 @@ func fileWriter(cmd *cobra.Command, description, filename string, canUseStdout b
 
 func isStd(s string) bool {
 	return s == "" || s == "-"
+}
+
+func readRSAPrivateKey(cmd *cobra.Command, o *Options) (*rsa.PrivateKey, error) {
+	filename := parseKeyFlagFrom(o, FlagNamePrivateKey, o.PrivateKeyFilename)
+	reader := fileReader(cmd, FilenameDescriptionPrivateKey, filename, false)
+	if reader == nil {
+		return nil, fmt.Errorf(`missing or invalid value for %v flag %v=%q`,
+			FilenameDescriptionPrivateKey, "--"+FlagNamePrivateKey, o.PrivateKeyFilename)
+	}
+	bs, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read private key bytes: %v", err)
+	}
+	block, _ := pem.Decode(bs)
+	if block == nil {
+		return nil, fmt.Errorf("failed to decode private key PEM")
+	}
+	return x509.ParsePKCS1PrivateKey(block.Bytes)
+}
+
+func readRSAPublicKey(cmd *cobra.Command, o *Options) (*rsa.PublicKey, error) {
+	filename := parseKeyFlagFrom(o, FlagNamePublicKey, o.PublicKeyFilename)
+	reader := fileReader(cmd, FilenameDescriptionPublicKey, filename, false)
+	if reader == nil {
+		return nil, fmt.Errorf(`missing or invalid value for %v flag %v=%q`,
+			FilenameDescriptionPublicKey, "--"+FlagNamePublicKey, o.PublicKeyFilename)
+	}
+	bs, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read public key bytes: %v", err)
+	}
+	block, _ := pem.Decode(bs)
+	if block == nil {
+		return nil, fmt.Errorf("failed to decode public key PEM")
+	}
+	return x509.ParsePKCS1PublicKey(block.Bytes)
 }

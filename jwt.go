@@ -6,10 +6,8 @@ import (
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
-	"encoding/pem"
 	"fmt"
 	"io"
 	"log"
@@ -270,7 +268,7 @@ func jwtSign(cmd *cobra.Command, o *Options, alg jwtAlg, signingInput []byte) ([
 		h.Write(signingInput)
 		return h.Sum(nil), nil
 	case jwtAlgFamilyRSA:
-		privateKey, err := jwtReadRSAPrivateKey(cmd, o)
+		privateKey, err := readRSAPrivateKey(cmd, o)
 		if err != nil {
 			return nil, err
 		}
@@ -301,7 +299,7 @@ func jwtVerify(cmd *cobra.Command, o *Options, alg jwtAlg, signingInput, sig []b
 		}
 		return nil
 	case jwtAlgFamilyRSA:
-		publicKey, err := jwtReadRSAPublicKey(cmd, o)
+		publicKey, err := readRSAPublicKey(cmd, o)
 		if err != nil {
 			return err
 		}
@@ -322,40 +320,4 @@ func jwtReadHMACKey(o *Options) ([]byte, error) {
 		return nil, fmt.Errorf("failed to read key bytes: %v", err)
 	}
 	return key, nil
-}
-
-func jwtReadRSAPrivateKey(cmd *cobra.Command, o *Options) (*rsa.PrivateKey, error) {
-	filename := parseKeyFlagFrom(o, FlagNamePrivateKey, o.PrivateKeyFilename)
-	reader := fileReader(cmd, FilenameDescriptionPrivateKey, filename, false)
-	if reader == nil {
-		return nil, fmt.Errorf(`missing or invalid value for %v flag %v=%q`,
-			FilenameDescriptionPrivateKey, "--"+FlagNamePrivateKey, o.PrivateKeyFilename)
-	}
-	bs, err := io.ReadAll(reader)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read private key bytes: %v", err)
-	}
-	block, _ := pem.Decode(bs)
-	if block == nil {
-		return nil, fmt.Errorf("failed to decode private key PEM")
-	}
-	return x509.ParsePKCS1PrivateKey(block.Bytes)
-}
-
-func jwtReadRSAPublicKey(cmd *cobra.Command, o *Options) (*rsa.PublicKey, error) {
-	filename := parseKeyFlagFrom(o, FlagNamePublicKey, o.PublicKeyFilename)
-	reader := fileReader(cmd, FilenameDescriptionPublicKey, filename, false)
-	if reader == nil {
-		return nil, fmt.Errorf(`missing or invalid value for %v flag %v=%q`,
-			FilenameDescriptionPublicKey, "--"+FlagNamePublicKey, o.PublicKeyFilename)
-	}
-	bs, err := io.ReadAll(reader)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read public key bytes: %v", err)
-	}
-	block, _ := pem.Decode(bs)
-	if block == nil {
-		return nil, fmt.Errorf("failed to decode public key PEM")
-	}
-	return x509.ParsePKCS1PublicKey(block.Bytes)
 }

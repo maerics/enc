@@ -111,6 +111,11 @@ func addJWTCommand(rootCmd *cobra.Command, o *Options) {
 func jwtSignCmd(cmd *cobra.Command, o *Options, alg jwtAlg, kid string, claimFlags []string, expiresIn time.Duration, omitIat bool) error {
 	warnIrrelevantJWTKeyFlags(alg, o)
 
+	hmacKey, privateKey, err := jwtResolveSigningKey(cmd, o, alg)
+	if err != nil {
+		return err
+	}
+
 	input, err := io.ReadAll(cmd.InOrStdin())
 	if err != nil {
 		return fmt.Errorf("failed to read claims from input: %v", err)
@@ -159,7 +164,7 @@ func jwtSignCmd(cmd *cobra.Command, o *Options, alg jwtAlg, kid string, claimFla
 	signingInput := base64.RawURLEncoding.EncodeToString(headerJSON) + "." +
 		base64.RawURLEncoding.EncodeToString(claimsJSON)
 
-	sig, err := jwtSign(cmd, o, alg, []byte(signingInput))
+	sig, err := jwtSign(alg, hmacKey, privateKey, []byte(signingInput))
 	if err != nil {
 		return fmt.Errorf("failed to sign token: %v", err)
 	}
@@ -179,6 +184,11 @@ func jwtSignCmd(cmd *cobra.Command, o *Options, alg jwtAlg, kid string, claimFla
 
 func jwtVerifyCmd(cmd *cobra.Command, o *Options, alg jwtAlg) error {
 	warnIrrelevantJWTKeyFlags(alg, o)
+
+	hmacKey, publicKey, err := jwtResolveVerifyingKey(cmd, o, alg)
+	if err != nil {
+		return err
+	}
 
 	input, err := io.ReadAll(cmd.InOrStdin())
 	if err != nil {
@@ -209,7 +219,7 @@ func jwtVerifyCmd(cmd *cobra.Command, o *Options, alg jwtAlg) error {
 		return fmt.Errorf("failed to decode signature: %v", err)
 	}
 	signingInput := []byte(parts[0] + "." + parts[1])
-	if err := jwtVerify(cmd, o, alg, signingInput, sig); err != nil {
+	if err := jwtVerify(alg, hmacKey, publicKey, signingInput, sig); err != nil {
 		return fmt.Errorf("signature verification failed: %v", err)
 	}
 
@@ -255,23 +265,41 @@ func warnIrrelevantJWTKeyFlags(alg jwtAlg, o *Options) {
 	}
 }
 
-func jwtSign(cmd *cobra.Command, o *Options, alg jwtAlg, signingInput []byte) ([]byte, error) {
+func jwtResolveSigningKey(cmd *cobra.Command, o *Options, alg jwtAlg) ([]byte, *rsa.PrivateKey, error) {
+	switch alg.Family {
+	case jwtAlgFamilyHMAC:
+		key, err := jwtReadHMACKey(o)
+		return key, nil, err
+	case jwtAlgFamilyRSA:
+		privateKey, err := readRSAPrivateKey(cmd, o)
+		return nil, privateKey, err
+	default:
+		return nil, nil, nil
+	}
+}
+
+func jwtResolveVerifyingKey(cmd *cobra.Command, o *Options, alg jwtAlg) ([]byte, *rsa.PublicKey, error) {
+	switch alg.Family {
+	case jwtAlgFamilyHMAC:
+		key, err := jwtReadHMACKey(o)
+		return key, nil, err
+	case jwtAlgFamilyRSA:
+		publicKey, err := readRSAPublicKey(cmd, o)
+		return nil, publicKey, err
+	default:
+		return nil, nil, nil
+	}
+}
+
+func jwtSign(alg jwtAlg, hmacKey []byte, privateKey *rsa.PrivateKey, signingInput []byte) ([]byte, error) {
 	switch alg.Family {
 	case jwtAlgFamilyNone:
 		return nil, nil
 	case jwtAlgFamilyHMAC:
-		key, err := jwtReadHMACKey(o)
-		if err != nil {
-			return nil, err
-		}
-		h := hmac.New(alg.Hash.New, key)
+		h := hmac.New(alg.Hash.New, hmacKey)
 		h.Write(signingInput)
 		return h.Sum(nil), nil
 	case jwtAlgFamilyRSA:
-		privateKey, err := readRSAPrivateKey(cmd, o)
-		if err != nil {
-			return nil, err
-		}
 		h := alg.Hash.New()
 		h.Write(signingInput)
 		return rsa.SignPKCS1v15(rand.Reader, privateKey, alg.Hash, h.Sum(nil))
@@ -280,7 +308,7 @@ func jwtSign(cmd *cobra.Command, o *Options, alg jwtAlg, signingInput []byte) ([
 	}
 }
 
-func jwtVerify(cmd *cobra.Command, o *Options, alg jwtAlg, signingInput, sig []byte) error {
+func jwtVerify(alg jwtAlg, hmacKey []byte, publicKey *rsa.PublicKey, signingInput, sig []byte) error {
 	switch alg.Family {
 	case jwtAlgFamilyNone:
 		if len(sig) != 0 {
@@ -288,21 +316,13 @@ func jwtVerify(cmd *cobra.Command, o *Options, alg jwtAlg, signingInput, sig []b
 		}
 		return nil
 	case jwtAlgFamilyHMAC:
-		key, err := jwtReadHMACKey(o)
-		if err != nil {
-			return err
-		}
-		h := hmac.New(alg.Hash.New, key)
+		h := hmac.New(alg.Hash.New, hmacKey)
 		h.Write(signingInput)
 		if !hmac.Equal(h.Sum(nil), sig) {
 			return fmt.Errorf("invalid signature")
 		}
 		return nil
 	case jwtAlgFamilyRSA:
-		publicKey, err := readRSAPublicKey(cmd, o)
-		if err != nil {
-			return err
-		}
 		h := alg.Hash.New()
 		h.Write(signingInput)
 		return rsa.VerifyPKCS1v15(publicKey, alg.Hash, h.Sum(nil), sig)

@@ -22,6 +22,7 @@ Available Commands:
   base64      Encode input using BASE64
   des         Encrypt input using DES
   des3        Encrypt input using 3DES
+  ed25519     Generate, sign, and verify using Ed25519 keys
   help        Help about any command
   hex         Encode input using HEX
   jwt         Sign input claims as a JWT
@@ -126,6 +127,44 @@ non-zero and writes nothing to stdout.
   sha512`
 - `-s, --signature string` signature filename (required)
 
+### ed25519
+
+Ed25519 has no standard encryption scheme, so unlike `rsa` there is no
+top-level encrypt/decrypt behavior — only key generation and signing. Keys
+are PEM-encoded PKCS8 (private) / PKIX (public), not RSA's PKCS1, so they
+are much smaller than RSA keys.
+
+#### ed25519 generate (alias: `gen`)
+
+- `--private-key string` file to write the private key, default `-` (stdout)
+- `--public-key string` file to write the public key, default `-` (stdout)
+
+#### ed25519 extract (aliases: `extract-public-key`, `extract-public`, `epk`, `ep`, `e`)
+
+Extracts the public key from a private key.
+
+- `--private-key string` file to read the private key, default `-` (stdin)
+- `--public-key string` file to write the public key, default `-` (stdout)
+
+#### ed25519 sign
+
+Signs input from stdin using an Ed25519 private key; writes the raw 64-byte
+signature to stdout. There is no `--hash` flag: Ed25519 always hashes
+internally and the hash is not user-selectable.
+
+- `--private-key string` private key filename
+- `-k, --key string` private key filename, equivalent to `--private-key`
+
+#### ed25519 verify
+
+Verifies input from stdin against a signature file using an Ed25519 public
+key. On success, writes the input back to stdout unchanged; on failure,
+exits non-zero and writes nothing to stdout.
+
+- `--public-key string` public key filename
+- `-k, --key string` public key filename, equivalent to `--public-key`
+- `-s, --signature string` signature filename (required)
+
 ### jwt
 
 `enc jwt` reads a JSON claims object from stdin and writes a signed compact
@@ -135,14 +174,15 @@ either direction to/from `jq` for anything fancier (building claims,
 inspecting `exp`/`nbf`, etc).
 
 - `-a, --alg string` signing/verifying algorithm: `none, HS256, HS384, HS512,
-  RS256, RS384, RS512`; when signing, defaults to `HS256`; when verifying, if
-  omitted, it is taken from the token's own `alg` header (or `HS256` if that
-  header is missing)
+  RS256, RS384, RS512, EdDSA`; when signing, defaults to `HS256`; when
+  verifying, if omitted, it is taken from the token's own `alg` header (or
+  `HS256` if that header is missing)
 - `-k, --key string` HMAC secret key filename, for `HS*` algorithms
-- `--private-key string` RSA private key filename, for signing with `RS*`
-  algorithms (same PKCS1 PEM format as `enc rsa`/`enc rsa generate`)
-- `--public-key string` RSA public key filename, for verifying `RS*`
-  algorithms
+- `--private-key string` private key filename, for signing: RSA PKCS1 PEM
+  (same format as `enc rsa`/`enc rsa generate`) for `RS*` algorithms, or
+  Ed25519 PKCS8 PEM (same format as `enc ed25519 generate`) for `EdDSA`
+- `--public-key string` public key filename, for verifying: RSA PKCS1 PEM
+  for `RS*` algorithms, or Ed25519 PKIX PEM for `EdDSA`
 - `--kid string` key ID to embed in the header when signing
 - `--claim key=value` set a claim when signing, repeatable; the value is
   parsed as JSON when possible (e.g. `--claim admin=true` is boolean, `--claim
@@ -184,6 +224,12 @@ $ echo 'Hello, RSA! 🔐' | enc rsa sign --key=priv.key > msg.sig
 $ echo 'Hello, RSA! 🔐' | enc rsa verify --key=pub.key --signature=msg.sig
 # Hello, RSA! 🔐
 
+# Ed25519 sign/verify.
+$ enc ed25519 generate --private-key=ed.priv --public-key=ed.pub
+$ echo 'Hello, Ed25519! 🔐' | enc ed25519 sign --key=ed.priv > msg.sig
+$ echo 'Hello, Ed25519! 🔐' | enc ed25519 verify --key=ed.pub --signature=msg.sig
+# Hello, Ed25519! 🔐
+
 # AES Encryption.
 $ openssl rand 32 > aes.key
 $ echo 'Hello, AES! 🔐' | enc aes --key=aes.key | dec aes --key=aes.key
@@ -202,6 +248,10 @@ $ echo '{"sub":"mike"}' | enc jwt --alg=HS256 --key=hmac.key --expires-in=1h \
 $ enc rsa generate --private-key=priv.key --public-key=pub.key
 $ echo '{"sub":"mike"}' | enc jwt --alg=RS256 --private-key=priv.key \
   | dec jwt --alg=RS256 --public-key=pub.key
+# {"iat":...,"sub":"mike"}
+$ enc ed25519 generate --private-key=ed.priv --public-key=ed.pub
+$ echo '{"sub":"mike"}' | enc jwt --alg=EdDSA --private-key=ed.priv \
+  | dec jwt --alg=EdDSA --public-key=ed.pub
 # {"iat":...,"sub":"mike"}
 ```
 

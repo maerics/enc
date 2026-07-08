@@ -96,6 +96,42 @@ func TestJWTRSAEndToEnd(t *testing.T) {
 	}
 }
 
+func TestJWTEdDSAEndToEnd(t *testing.T) {
+	tempDir := t.TempDir()
+	privateKeyFilename := path.Join(tempDir, "priv.key")
+	publicKeyFilename := path.Join(tempDir, "pub.key")
+
+	if _, _, err := runJWTCmd(t,
+		[]string{"ed25519", "generate", "--private-key", privateKeyFilename, "--public-key", publicKeyFilename},
+		""); err != nil {
+		t.Fatalf("keygen failed: %v", err)
+	}
+
+	token, _, err := runJWTCmd(t,
+		[]string{"jwt", "--alg=EdDSA", "--private-key", privateKeyFilename, "--expires-in=1h"},
+		`{"sub":"bob"}`)
+	if err != nil {
+		t.Fatalf("sign failed: %v", err)
+	}
+
+	claimsOut, _, err := runJWTCmd(t,
+		[]string{"jwt", "-d", "--alg=EdDSA", "--public-key", publicKeyFilename},
+		token)
+	if err != nil {
+		t.Fatalf("verify failed: %v", err)
+	}
+	var claims map[string]any
+	if err := json.Unmarshal([]byte(claimsOut), &claims); err != nil {
+		t.Fatalf("invalid claims JSON %q: %v", claimsOut, err)
+	}
+	if claims["sub"] != "bob" {
+		t.Fatalf("unexpected claims: %v", claims)
+	}
+	if _, ok := claims["exp"]; !ok {
+		t.Fatalf("expected exp claim, got %v", claims)
+	}
+}
+
 func TestJWTNoneAlg(t *testing.T) {
 	token, _, err := runJWTCmd(t, []string{"jwt", "--alg=none", "--omit-iat"}, `{"sub":"eve"}`)
 	if err != nil {
@@ -227,6 +263,37 @@ func TestJWTVerifyAutoDetectsAlgFromHeader(t *testing.T) {
 	// No --alg flag on verify: should auto-detect HS512 from the header
 	// rather than defaulting to HS256.
 	claimsOut, _, err := runJWTCmd(t, []string{"jwt", "-d", "--key", keyFilename}, token)
+	if err != nil {
+		t.Fatalf("verify with auto-detected alg failed: %v", err)
+	}
+	var claims map[string]any
+	if err := json.Unmarshal([]byte(claimsOut), &claims); err != nil {
+		t.Fatalf("invalid claims JSON %q: %v", claimsOut, err)
+	}
+	if claims["sub"] != "alice" {
+		t.Fatalf("unexpected claims: %v", claims)
+	}
+}
+
+func TestJWTEdDSAVerifyAutoDetectsAlgFromHeader(t *testing.T) {
+	tempDir := t.TempDir()
+	privateKeyFilename := path.Join(tempDir, "priv.key")
+	publicKeyFilename := path.Join(tempDir, "pub.key")
+
+	if _, _, err := runJWTCmd(t,
+		[]string{"ed25519", "generate", "--private-key", privateKeyFilename, "--public-key", publicKeyFilename},
+		""); err != nil {
+		t.Fatalf("keygen failed: %v", err)
+	}
+
+	token, _, err := runJWTCmd(t,
+		[]string{"jwt", "--alg=EdDSA", "--private-key", privateKeyFilename}, `{"sub":"alice"}`)
+	if err != nil {
+		t.Fatalf("sign failed: %v", err)
+	}
+
+	// No --alg flag on verify: should auto-detect EdDSA from the header.
+	claimsOut, _, err := runJWTCmd(t, []string{"jwt", "-d", "--public-key", publicKeyFilename}, token)
 	if err != nil {
 		t.Fatalf("verify with auto-detected alg failed: %v", err)
 	}

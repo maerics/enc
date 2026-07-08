@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"crypto"
+	"crypto/ed25519"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/rsa"
@@ -33,9 +34,10 @@ const (
 type jwtAlgFamily string
 
 const (
-	jwtAlgFamilyNone jwtAlgFamily = "none"
-	jwtAlgFamilyHMAC jwtAlgFamily = "hmac"
-	jwtAlgFamilyRSA  jwtAlgFamily = "rsa"
+	jwtAlgFamilyNone  jwtAlgFamily = "none"
+	jwtAlgFamilyHMAC  jwtAlgFamily = "hmac"
+	jwtAlgFamilyRSA   jwtAlgFamily = "rsa"
+	jwtAlgFamilyEdDSA jwtAlgFamily = "eddsa"
 )
 
 type jwtAlg struct {
@@ -52,9 +54,10 @@ var jwtAlgorithms = map[string]jwtAlg{
 	"RS256": {"RS256", crypto.SHA256, jwtAlgFamilyRSA},
 	"RS384": {"RS384", crypto.SHA384, jwtAlgFamilyRSA},
 	"RS512": {"RS512", crypto.SHA512, jwtAlgFamilyRSA},
+	"EdDSA": {"EdDSA", 0, jwtAlgFamilyEdDSA},
 }
 
-var jwtAlgNames = []string{"none", "HS256", "HS384", "HS512", "RS256", "RS384", "RS512"}
+var jwtAlgNames = []string{"none", "HS256", "HS384", "HS512", "RS256", "RS384", "RS512", "EdDSA"}
 
 func addJWTCommand(rootCmd *cobra.Command, o *Options) {
 	var algName string
@@ -95,9 +98,9 @@ func addJWTCommand(rootCmd *cobra.Command, o *Options) {
 	cmd.Flags().StringVarP(&o.KeyFilename, FlagNameKey, "k", "",
 		"HMAC secret key filename (for HS* algorithms)")
 	cmd.Flags().StringVar(&o.PrivateKeyFilename, FlagNamePrivateKey, "",
-		"RSA private key filename, for signing (RS* algorithms)")
+		"private key filename, for signing (RSA PKCS1 PEM for RS* algorithms, Ed25519 PKCS8 PEM for EdDSA)")
 	cmd.Flags().StringVar(&o.PublicKeyFilename, FlagNamePublicKey, "",
-		"RSA public key filename, for verifying (RS* algorithms)")
+		"public key filename, for verifying (RSA PKCS1 PEM for RS* algorithms, Ed25519 PKIX PEM for EdDSA)")
 	cmd.Flags().StringVar(&kid, FlagNameKid, "",
 		"key ID to embed in the header; ignored when verifying")
 	cmd.Flags().StringArrayVar(&claims, FlagNameClaim, nil,
@@ -116,7 +119,7 @@ func addJWTCommand(rootCmd *cobra.Command, o *Options) {
 func jwtSignCmd(cmd *cobra.Command, o *Options, alg jwtAlg, kid string, claimFlags []string, expiresIn time.Duration, omitIat bool) error {
 	warnIrrelevantJWTKeyFlags(alg, o)
 
-	hmacKey, privateKey, err := jwtResolveSigningKey(cmd, o, alg)
+	hmacKey, rsaKey, edKey, err := jwtResolveSigningKey(cmd, o, alg)
 	if err != nil {
 		return err
 	}
@@ -169,7 +172,7 @@ func jwtSignCmd(cmd *cobra.Command, o *Options, alg jwtAlg, kid string, claimFla
 	signingInput := base64.RawURLEncoding.EncodeToString(headerJSON) + "." +
 		base64.RawURLEncoding.EncodeToString(claimsJSON)
 
-	sig, err := jwtSign(alg, hmacKey, privateKey, []byte(signingInput))
+	sig, err := jwtSign(alg, hmacKey, rsaKey, edKey, []byte(signingInput))
 	if err != nil {
 		return fmt.Errorf("failed to sign token: %v", err)
 	}
@@ -235,7 +238,7 @@ func jwtVerifyCmd(cmd *cobra.Command, o *Options, algName string) error {
 
 	warnIrrelevantJWTKeyFlags(alg, o)
 
-	hmacKey, publicKey, err := jwtResolveVerifyingKey(cmd, o, alg)
+	hmacKey, rsaKey, edKey, err := jwtResolveVerifyingKey(cmd, o, alg)
 	if err != nil {
 		return err
 	}
@@ -245,7 +248,7 @@ func jwtVerifyCmd(cmd *cobra.Command, o *Options, algName string) error {
 		return fmt.Errorf("failed to decode signature: %v", err)
 	}
 	signingInput := []byte(parts[0] + "." + parts[1])
-	if err := jwtVerify(alg, hmacKey, publicKey, signingInput, sig); err != nil {
+	if err := jwtVerify(alg, hmacKey, rsaKey, edKey, signingInput, sig); err != nil {
 		return fmt.Errorf("signature verification failed: %v", err)
 	}
 
@@ -284,40 +287,52 @@ func warnIrrelevantJWTKeyFlags(alg jwtAlg, o *Options) {
 		if o.PublicKeyFilename != "" {
 			log.Printf("WARNING: ignoring irrelevant %q flag for HMAC algorithms", "--"+FlagNamePublicKey)
 		}
-	case jwtAlgFamilyRSA:
+	case jwtAlgFamilyRSA, jwtAlgFamilyEdDSA:
 		if o.KeyFilename != "" {
-			log.Printf("WARNING: ignoring irrelevant %q flag for RSA algorithms", "--"+FlagNameKey)
+			log.Printf("WARNING: ignoring irrelevant %q flag for %v algorithms", "--"+FlagNameKey, alg.Family)
 		}
 	}
 }
 
-func jwtResolveSigningKey(cmd *cobra.Command, o *Options, alg jwtAlg) ([]byte, *rsa.PrivateKey, error) {
+// jwtResolveSigningKey/jwtResolveVerifyingKey and jwtSign/jwtVerify below take one
+// concrete key parameter per supported asymmetric family (rsaKey, edKey) rather than a
+// crypto.Signer/crypto.PublicKey abstraction, matching this codebase's existing
+// concrete-key-type style. A future ECDSA addition (see TODO.md) will need this same
+// widening again for a 4th key type.
+
+func jwtResolveSigningKey(cmd *cobra.Command, o *Options, alg jwtAlg) ([]byte, *rsa.PrivateKey, ed25519.PrivateKey, error) {
 	switch alg.Family {
 	case jwtAlgFamilyHMAC:
 		key, err := jwtReadHMACKey(o)
-		return key, nil, err
+		return key, nil, nil, err
 	case jwtAlgFamilyRSA:
 		privateKey, err := readRSAPrivateKey(cmd, o)
-		return nil, privateKey, err
+		return nil, privateKey, nil, err
+	case jwtAlgFamilyEdDSA:
+		privateKey, err := readEd25519PrivateKey(cmd, o)
+		return nil, nil, privateKey, err
 	default:
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
 }
 
-func jwtResolveVerifyingKey(cmd *cobra.Command, o *Options, alg jwtAlg) ([]byte, *rsa.PublicKey, error) {
+func jwtResolveVerifyingKey(cmd *cobra.Command, o *Options, alg jwtAlg) ([]byte, *rsa.PublicKey, ed25519.PublicKey, error) {
 	switch alg.Family {
 	case jwtAlgFamilyHMAC:
 		key, err := jwtReadHMACKey(o)
-		return key, nil, err
+		return key, nil, nil, err
 	case jwtAlgFamilyRSA:
 		publicKey, err := readRSAPublicKey(cmd, o)
-		return nil, publicKey, err
+		return nil, publicKey, nil, err
+	case jwtAlgFamilyEdDSA:
+		publicKey, err := readEd25519PublicKey(cmd, o)
+		return nil, nil, publicKey, err
 	default:
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
 }
 
-func jwtSign(alg jwtAlg, hmacKey []byte, privateKey *rsa.PrivateKey, signingInput []byte) ([]byte, error) {
+func jwtSign(alg jwtAlg, hmacKey []byte, rsaKey *rsa.PrivateKey, edKey ed25519.PrivateKey, signingInput []byte) ([]byte, error) {
 	switch alg.Family {
 	case jwtAlgFamilyNone:
 		return nil, nil
@@ -328,13 +343,15 @@ func jwtSign(alg jwtAlg, hmacKey []byte, privateKey *rsa.PrivateKey, signingInpu
 	case jwtAlgFamilyRSA:
 		h := alg.Hash.New()
 		h.Write(signingInput)
-		return rsa.SignPKCS1v15(rand.Reader, privateKey, alg.Hash, h.Sum(nil))
+		return rsa.SignPKCS1v15(rand.Reader, rsaKey, alg.Hash, h.Sum(nil))
+	case jwtAlgFamilyEdDSA:
+		return ed25519.Sign(edKey, signingInput), nil
 	default:
 		return nil, fmt.Errorf("unsupported algorithm %q", alg.Name)
 	}
 }
 
-func jwtVerify(alg jwtAlg, hmacKey []byte, publicKey *rsa.PublicKey, signingInput, sig []byte) error {
+func jwtVerify(alg jwtAlg, hmacKey []byte, rsaKey *rsa.PublicKey, edKey ed25519.PublicKey, signingInput, sig []byte) error {
 	switch alg.Family {
 	case jwtAlgFamilyNone:
 		if len(sig) != 0 {
@@ -351,7 +368,12 @@ func jwtVerify(alg jwtAlg, hmacKey []byte, publicKey *rsa.PublicKey, signingInpu
 	case jwtAlgFamilyRSA:
 		h := alg.Hash.New()
 		h.Write(signingInput)
-		return rsa.VerifyPKCS1v15(publicKey, alg.Hash, h.Sum(nil), sig)
+		return rsa.VerifyPKCS1v15(rsaKey, alg.Hash, h.Sum(nil), sig)
+	case jwtAlgFamilyEdDSA:
+		if !ed25519.Verify(edKey, signingInput, sig) {
+			return fmt.Errorf("invalid signature")
+		}
+		return nil
 	default:
 		return fmt.Errorf("unsupported algorithm %q", alg.Name)
 	}

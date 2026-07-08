@@ -59,6 +59,20 @@ var jwtAlgorithms = map[string]jwtAlg{
 
 var jwtAlgNames = []string{"none", "HS256", "HS384", "HS512", "RS256", "RS384", "RS512", "EdDSA"}
 
+var jwtAlgorithmsLower = func() map[string]jwtAlg {
+	m := make(map[string]jwtAlg, len(jwtAlgorithms))
+	for _, alg := range jwtAlgorithms {
+		m[strings.ToLower(alg.Name)] = alg
+	}
+	return m
+}()
+
+// lookupJWTAlg resolves a user-supplied --alg flag value case-insensitively.
+func lookupJWTAlg(name string) (jwtAlg, bool) {
+	alg, ok := jwtAlgorithmsLower[strings.ToLower(name)]
+	return alg, ok
+}
+
 func addJWTCommand(rootCmd *cobra.Command, o *Options) {
 	var algName string
 	var kid string
@@ -83,7 +97,7 @@ func addJWTCommand(rootCmd *cobra.Command, o *Options) {
 			if signAlgName == "" {
 				signAlgName = "HS256"
 			}
-			alg, ok := jwtAlgorithms[signAlgName]
+			alg, ok := lookupJWTAlg(signAlgName)
 			if !ok {
 				return fmt.Errorf("invalid %q flag %q: must be one of %v",
 					"--"+FlagNameAlg, signAlgName, strings.Join(jwtAlgNames, ", "))
@@ -215,7 +229,7 @@ func jwtVerifyCmd(cmd *cobra.Command, o *Options, algName string) error {
 	var alg jwtAlg
 	if algName != "" {
 		var ok bool
-		alg, ok = jwtAlgorithms[algName]
+		alg, ok = lookupJWTAlg(algName)
 		if !ok {
 			return fmt.Errorf("invalid %q flag %q: must be one of %v",
 				"--"+FlagNameAlg, algName, strings.Join(jwtAlgNames, ", "))

@@ -154,6 +154,51 @@ func TestJWTNoneAlg(t *testing.T) {
 	}
 }
 
+func TestJWTAlgFlagCaseInsensitive(t *testing.T) {
+	tempDir := t.TempDir()
+	privateKeyFilename := path.Join(tempDir, "priv.key")
+	publicKeyFilename := path.Join(tempDir, "pub.key")
+
+	if _, _, err := runJWTCmd(t,
+		[]string{"rsa", "generate", "--private-key", privateKeyFilename, "--public-key", publicKeyFilename},
+		""); err != nil {
+		t.Fatalf("keygen failed: %v", err)
+	}
+
+	token, _, err := runJWTCmd(t,
+		[]string{"jwt", "--alg=rs256", "--private-key", privateKeyFilename}, `{"sub":"bob"}`)
+	if err != nil {
+		t.Fatalf("sign with lowercase --alg failed: %v", err)
+	}
+
+	headerJSON, err := base64.RawURLEncoding.DecodeString(strings.Split(token, ".")[0])
+	if err != nil {
+		t.Fatalf("failed to decode header: %v", err)
+	}
+	var header struct {
+		Alg string `json:"alg"`
+	}
+	if err := json.Unmarshal(headerJSON, &header); err != nil {
+		t.Fatalf("failed to parse header: %v", err)
+	}
+	if header.Alg != "RS256" {
+		t.Fatalf("expected canonical alg RS256 in header, got %q", header.Alg)
+	}
+
+	claimsOut, _, err := runJWTCmd(t,
+		[]string{"jwt", "-d", "--alg=Rs256", "--public-key", publicKeyFilename}, token)
+	if err != nil {
+		t.Fatalf("verify with mixed-case --alg failed: %v", err)
+	}
+	var claims map[string]any
+	if err := json.Unmarshal([]byte(claimsOut), &claims); err != nil {
+		t.Fatalf("invalid claims JSON %q: %v", claimsOut, err)
+	}
+	if claims["sub"] != "bob" {
+		t.Fatalf("unexpected claims: %v", claims)
+	}
+}
+
 // Regression test: "--key=-" for an HMAC alg must be rejected with a
 // message distinct from the "flag omitted" case.
 func TestJWTHMACKeyDashRejected(t *testing.T) {

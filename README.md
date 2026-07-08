@@ -242,17 +242,17 @@ $ echo 'Hello, 3DES! 🔐' | enc des3 --key=des3.key | dec des3 --key=des3.key
 
 # JWT signing/verification.
 $ openssl rand 32 > hmac.key
-$ echo '{"sub":"mike"}' | enc jwt --alg=HS256 --key=hmac.key --expires-in=1h \
+$ echo '{"sub":"alice"}' | enc jwt --alg=HS256 --key=hmac.key --expires-in=1h \
   | dec jwt --alg=HS256 --key=hmac.key
-# {"exp":...,"iat":...,"sub":"mike"}
+# {"exp":...,"iat":...,"sub":"alice"}
 $ enc rsa generate --private-key=priv.key --public-key=pub.key
-$ echo '{"sub":"mike"}' | enc jwt --alg=RS256 --private-key=priv.key \
+$ echo '{"sub":"alice"}' | enc jwt --alg=RS256 --private-key=priv.key \
   | dec jwt --alg=RS256 --public-key=pub.key
-# {"iat":...,"sub":"mike"}
+# {"iat":...,"sub":"alice"}
 $ enc ed25519 generate --private-key=ed.priv --public-key=ed.pub
-$ echo '{"sub":"mike"}' | enc jwt --alg=EdDSA --private-key=ed.priv \
+$ echo '{"sub":"alice"}' | enc jwt --alg=EdDSA --private-key=ed.priv \
   | dec jwt --alg=EdDSA --public-key=ed.pub
-# {"iat":...,"sub":"mike"}
+# {"iat":...,"sub":"alice"}
 ```
 
 ## License

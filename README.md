@@ -199,6 +199,21 @@ algorithm-confusion attacks where a token claims a different or weaker
 algorithm than the caller expects. Always pass `--alg` explicitly when
 verifying tokens from an untrusted source.
 
+#### jwt dump
+
+`enc jwt dump` (or `dec jwt dump`, identical either way — it ignores
+`-d`/`-D`) reads a compact JWT from stdin and prints its decoded header,
+payload, and signature as JSON, without verifying anything and without
+requiring a key:
+```json
+{
+  "header": {"alg": "HS256", "typ": "JWT"},
+  "payload": {"sub": "alice"},
+  "signature": "c4734de3728923f73da616ebb72ae99e4156fbbc0703d760e201d55ed52f6461"
+}
+```
+`signature` is the raw signature bytes hex-encoded. Takes no flags.
+
 ## Examples
 ```sh
 # Common encodings.
@@ -253,6 +268,8 @@ $ enc ed25519 generate --private-key=ed.priv --public-key=ed.pub
 $ echo '{"sub":"alice"}' | enc jwt --alg=EdDSA --private-key=ed.priv \
   | dec jwt --alg=EdDSA --public-key=ed.pub
 # {"iat":...,"sub":"alice"}
+$ echo '{"sub":"alice"}' | enc jwt --alg=HS256 --key=hmac.key | enc jwt dump
+# {"header":{"alg":"HS256","typ":"JWT"},"payload":{"iat":...,"sub":"alice"},"signature":"..."}
 ```
 
 ## License

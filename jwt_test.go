@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"os"
 	"path"
@@ -384,5 +385,125 @@ func TestJWTClaimFlagTypes(t *testing.T) {
 	}
 	if claims["name"] != "bob" {
 		t.Fatalf("expected name=\"bob\" (string), got %#v", claims["name"])
+	}
+}
+
+func TestJWTDump(t *testing.T) {
+	tempDir := t.TempDir()
+	keyFilename := path.Join(tempDir, "hmac.key")
+	if err := os.WriteFile(keyFilename, []byte("super-secret"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	token, _, err := runJWTCmd(t,
+		[]string{"jwt", "--alg=HS256", "--key", keyFilename, "--claim", "sub=alice"}, "")
+	if err != nil {
+		t.Fatalf("sign failed: %v", err)
+	}
+	token = strings.TrimSpace(token)
+	parts := strings.Split(token, ".")
+	if len(parts) != 3 {
+		t.Fatalf("expected 3 token parts, got %v", len(parts))
+	}
+	wantSig, err := base64.RawURLEncoding.DecodeString(parts[2])
+	if err != nil {
+		t.Fatalf("failed to decode expected signature: %v", err)
+	}
+
+	dumpOut, _, err := runJWTCmd(t, []string{"jwt", "dump"}, token)
+	if err != nil {
+		t.Fatalf("dump failed: %v", err)
+	}
+
+	var dumped struct {
+		Header    map[string]any `json:"header"`
+		Payload   map[string]any `json:"payload"`
+		Signature string         `json:"signature"`
+	}
+	if err := json.Unmarshal([]byte(dumpOut), &dumped); err != nil {
+		t.Fatalf("invalid dump JSON %q: %v", dumpOut, err)
+	}
+
+	if dumped.Header["alg"] != "HS256" {
+		t.Fatalf("expected header.alg=HS256, got %#v", dumped.Header["alg"])
+	}
+	if dumped.Header["typ"] != "JWT" {
+		t.Fatalf("expected header.typ=JWT, got %#v", dumped.Header["typ"])
+	}
+	if dumped.Payload["sub"] != "alice" {
+		t.Fatalf("expected payload.sub=alice, got %#v", dumped.Payload["sub"])
+	}
+
+	gotSig, err := hex.DecodeString(dumped.Signature)
+	if err != nil {
+		t.Fatalf("signature %q is not valid hex: %v", dumped.Signature, err)
+	}
+	if !bytes.Equal(gotSig, wantSig) {
+		t.Fatalf("signature mismatch: got %x, want %x", gotSig, wantSig)
+	}
+}
+
+func TestJWTDumpIgnoresDecodeFlag(t *testing.T) {
+	token, _, err := runJWTCmd(t, []string{"jwt", "--alg=none", "--claim", "sub=alice"}, "")
+	if err != nil {
+		t.Fatalf("sign failed: %v", err)
+	}
+
+	out1, _, err := runJWTCmd(t, []string{"jwt", "dump"}, token)
+	if err != nil {
+		t.Fatalf("dump failed: %v", err)
+	}
+	out2, _, err := runJWTCmd(t, []string{"-d", "jwt", "dump"}, token)
+	if err != nil {
+		t.Fatalf("dump with -d failed: %v", err)
+	}
+	if out1 != out2 {
+		t.Fatalf("dump output differs with -d flag:\n%v\nvs\n%v", out1, out2)
+	}
+}
+
+func TestJWTDumpNoneAlg(t *testing.T) {
+	token, _, err := runJWTCmd(t, []string{"jwt", "--alg=none", "--claim", "sub=alice"}, "")
+	if err != nil {
+		t.Fatalf("sign failed: %v", err)
+	}
+
+	dumpOut, _, err := runJWTCmd(t, []string{"jwt", "dump"}, token)
+	if err != nil {
+		t.Fatalf("dump failed: %v", err)
+	}
+	var dumped struct {
+		Signature string `json:"signature"`
+	}
+	if err := json.Unmarshal([]byte(dumpOut), &dumped); err != nil {
+		t.Fatalf("invalid dump JSON %q: %v", dumpOut, err)
+	}
+	if dumped.Signature != "" {
+		t.Fatalf("expected empty signature for alg=none, got %q", dumped.Signature)
+	}
+}
+
+func TestJWTDumpMalformedToken(t *testing.T) {
+	for _, token := range []string{"not-a-jwt", "one.two.three.four", "one.two"} {
+		if _, _, err := runJWTCmd(t, []string{"jwt", "dump"}, token); err == nil {
+			t.Fatalf("expected error for malformed token %q, got nil", token)
+		}
+	}
+}
+
+func TestJWTDumpInvalidSegments(t *testing.T) {
+	// Valid signature/base64 shape but the header segment is not valid JSON once decoded.
+	badHeader := base64.RawURLEncoding.EncodeToString([]byte("not-json"))
+	payload := base64.RawURLEncoding.EncodeToString([]byte(`{"sub":"alice"}`))
+	token := badHeader + "." + payload + "."
+	if _, _, err := runJWTCmd(t, []string{"jwt", "dump"}, token); err == nil {
+		t.Fatal("expected error for invalid header JSON, got nil")
+	}
+
+	badPayload := base64.RawURLEncoding.EncodeToString([]byte("not-json"))
+	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"none","typ":"JWT"}`))
+	token = header + "." + badPayload + "."
+	if _, _, err := runJWTCmd(t, []string{"jwt", "dump"}, token); err == nil {
+		t.Fatal("expected error for invalid payload JSON, got nil")
 	}
 }

@@ -127,6 +127,8 @@ func addJWTCommand(rootCmd *cobra.Command, o *Options) {
 	cmd.Flags().BoolVarP(&o.AppendNewline, FlagNameAppendNewline, "n", o.AppendNewline,
 		"append a trailing newline to the output")
 
+	addJWTDumpCmd(cmd)
+
 	rootCmd.AddCommand(cmd)
 }
 

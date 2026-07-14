@@ -25,6 +25,7 @@ Available Commands:
   ed25519     Generate, sign, and verify using Ed25519 keys
   help        Help about any command
   hex         Encode input using HEX
+  jwe         Encrypt input as a JWE
   jwt         Sign input claims as a JWT
   rot13       Encode input using ROT13
   rsa         Encrypt input using RSA public key
@@ -165,6 +166,55 @@ exits non-zero and writes nothing to stdout.
 - `-k, --key string` public key filename, equivalent to `--public-key`
 - `-s, --signature string` signature filename (required)
 
+### jwe
+
+`enc jwe` reads plaintext from stdin and writes a compact JWE to stdout.
+`dec jwe` (or `enc -D jwe`) reads a compact JWE from stdin, decrypts it, and
+writes the plaintext to stdout.
+
+- `-a, --alg string` key management algorithm: `dir, RSA-OAEP-256`; when
+  encrypting, defaults to `dir`; when decrypting, if omitted, it is taken
+  from the token's own `alg` header
+- `-e, --enc string` content encryption algorithm: `A128GCM, A192GCM,
+  A256GCM`; when encrypting, defaults to `A256GCM`; when decrypting, if
+  omitted, it is taken from the token's own `enc` header
+- `-k, --key string` raw symmetric content-encryption key (CEK) filename,
+  for `alg=dir`; must be exactly the byte size required by `--enc` (16/24/32
+  bytes for A128/192/256GCM)
+- `--private-key string` private key filename, for decrypting: RSA PKCS1
+  PEM (same format as `enc rsa`/`enc rsa generate`) for `alg=RSA-OAEP-256`
+- `--public-key string` public key filename, for encrypting: RSA PKCS1 PEM
+  for `alg=RSA-OAEP-256`
+- `--kid string` key ID to embed in the header when encrypting
+- `-n, --append-newline` append a trailing newline to the output
+
+When decrypting, if `--alg`/`--enc` are passed explicitly they must match
+the token's own header `alg`/`enc`; a mismatch is rejected. If omitted, both
+are taken from the token's header instead, which is convenient but exposes
+the same kind of algorithm-confusion attack as `jwt`: a token can dictate
+which RSA key or CEK size to trust. Always pass `--alg`/`--enc` explicitly
+when decrypting tokens from an untrusted source. The IV is always freshly
+random per encryption and is always carried as its own token segment; there
+is no `--iv` flag to supply or omit one.
+
+#### jwe dump
+
+`enc jwe dump` (or `dec jwe dump`, identical either way — it ignores
+`-d`/`-D`) reads a compact JWE from stdin and prints its decoded header,
+encrypted key, IV, ciphertext, and tag as JSON, without decrypting anything
+and without requiring a key:
+```json
+{
+  "header": {"alg": "dir", "enc": "A256GCM"},
+  "encryptedKey": "",
+  "iv": "fc734b98f33107314dc87871",
+  "ciphertext": "be5cab87b3",
+  "tag": "86e9139be33b1e0665177a717230cfab"
+}
+```
+`encryptedKey`/`iv`/`ciphertext`/`tag` are the raw bytes hex-encoded;
+`encryptedKey` is empty for `alg=dir` tokens. Takes no flags.
+
 ### jwt
 
 `enc jwt` reads a JSON claims object from stdin and writes a signed compact
@@ -270,6 +320,17 @@ $ echo '{"sub":"alice"}' | enc jwt --alg=EdDSA --private-key=ed.priv \
 # {"iat":...,"sub":"alice"}
 $ echo '{"sub":"alice"}' | enc jwt --alg=HS256 --key=hmac.key | enc jwt dump
 # {"header":{"alg":"HS256","typ":"JWT"},"payload":{"iat":...,"sub":"alice"},"signature":"..."}
+
+# JWE encryption.
+$ openssl rand 32 > cek.key
+$ echo 'Hello, JWE! 🔐' | enc jwe --alg=dir --enc=A256GCM --key=cek.key \
+  | dec jwe --alg=dir --enc=A256GCM --key=cek.key
+# Hello, JWE! 🔐
+$ echo 'Hello, JWE! 🔐' | enc jwe --alg=RSA-OAEP-256 --enc=A256GCM --public-key=pub.key \
+  | dec jwe --alg=RSA-OAEP-256 --enc=A256GCM --private-key=priv.key
+# Hello, JWE! 🔐
+$ echo 'Hello, JWE! 🔐' | enc jwe --alg=dir --key=cek.key | enc jwe dump
+# {"header":{"alg":"dir","enc":"A256GCM"},"encryptedKey":"","iv":"...","ciphertext":"...","tag":"..."}
 ```
 
 ## License

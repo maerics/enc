@@ -82,6 +82,9 @@ func addEd25519ExtractPublicKeyCmd(ed25519Cmd *cobra.Command) {
 			if err != nil {
 				log.Fatalf("FATAL: failed to read private key bytes: %v", err)
 			}
+			// TODO: support "OPENSSH PRIVATE KEY" PEM blocks (golang.org/x/crypto/ssh), including passphrase-protected keys.
+			// TODO: support raw 32-byte seed input (no PEM), e.g. via --input-format raw.
+			// TODO: support raw 64-byte seed+pubkey input (Go's ed25519.PrivateKey wire form), e.g. via --input-format raw64.
 			privateKeyPEM, _ := pem.Decode(privateKeyBytes)
 			if privateKeyPEM == nil {
 				log.Fatalf("FATAL: failed to decode private key PEM")

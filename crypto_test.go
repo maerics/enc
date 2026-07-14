@@ -31,6 +31,8 @@ var knownErrors = map[string]func(algo, mode string, key, message, iv, ad []byte
 			return fmt.Errorf("failed to create AES cipher: crypto/aes: invalid key size %v", len(key))
 		case mode == string(cryptoModeBlock) && len(message) != len(key):
 			return fmt.Errorf("AES/encrypt: key size %vb != input size %vb", len(key), len(message))
+		case mode == string(cryptoModeGCM) && len(iv) > 0:
+			return fmt.Errorf(`the "--iv" and "--omit-iv" flags are not supported in "gcm" mode: a random nonce is always generated and prepended to the ciphertext`)
 		case mode == string(cryptoModeCTR) && len(iv) > 0 && len(iv) != aes.BlockSize:
 			return fmt.Errorf("invalid initialization vector size %v for block size %v", len(iv), aes.BlockSize)
 		}

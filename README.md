@@ -80,9 +80,11 @@ of standard encoding.
 - `-m, --mode mode` encryption mode: `block, cbc, cfb, ctr, ecb, ofb, gcm`
   (default `gcm` for aes, `ctr` for des/des3). Only `block`, `ctr` and `gcm`
   (aes only) are currently implemented; the rest are reserved.
-- `--iv string` initialization vector filename; if omitted a random IV is
-  generated (`ctr` mode) or prepended automatically (`gcm` mode)
-- `--omit-iv` omit the initialization vector from encrypted output
+- `--iv string` initialization vector filename (`ctr` mode only); if omitted a
+  random IV is generated. Not supported in `gcm` mode, which always generates
+  a random nonce and prepends it to the ciphertext
+- `--omit-iv` omit the initialization vector from encrypted output (`ctr`
+  mode only; not supported in `gcm` mode)
 - `-a, --additional-data string` (aes only) additional authenticated data
   filename, used in `gcm` mode
 

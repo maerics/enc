@@ -90,16 +90,9 @@ func encrypt(cmd *cobra.Command, o *Options, cipherName string, cipherFunc func(
 	}
 
 	// Read the encryption key.
-	if o.KeyFilename == "" {
-		return fmt.Errorf(`missing required "--%v" flag`, FlagNameKey)
-	}
-	keyReader := fileReader(cmd, FlagNameKey, o.KeyFilename, false)
-	if keyReader == nil {
-		return fmt.Errorf(`the "--%v" flag does not support "-" (stdin); provide a file path`, FlagNameKey)
-	}
-	key, err := io.ReadAll(keyReader)
+	key, err := readKeyFile(o.KeyFilename)
 	if err != nil {
-		return fmt.Errorf("failed to read all key bytes: %v", err)
+		return err
 	}
 	o.KeyBytes = key
 
@@ -137,16 +130,9 @@ func decrypt(cmd *cobra.Command, o *Options, cipherName string, cipherFunc func(
 	}
 
 	// Read the decryption key.
-	if o.KeyFilename == "" {
-		return fmt.Errorf(`missing required "--%v" flag`, FlagNameKey)
-	}
-	keyReader := fileReader(cmd, FlagNameKey, o.KeyFilename, false)
-	if keyReader == nil {
-		return fmt.Errorf(`the "--%v" flag does not support "-" (stdin); provide a file path`, FlagNameKey)
-	}
-	key, err := io.ReadAll(keyReader)
+	key, err := readKeyFile(o.KeyFilename)
 	if err != nil {
-		return fmt.Errorf("failed to read all key bytes: %v", err)
+		return err
 	}
 	o.KeyBytes = key
 
@@ -166,6 +152,22 @@ func decrypt(cmd *cobra.Command, o *Options, cipherName string, cipherFunc func(
 	// Decrypt and write the output.
 	plaintextWriter := cmd.OutOrStdout()
 	return decryptFunc(cipherName, c, ciphertext, plaintextWriter, o)
+}
+
+// readKeyFile reads the key file, returning an error instead of aborting the
+// process so callers can surface it through Cobra's normal error handling.
+func readKeyFile(filename string) ([]byte, error) {
+	if filename == "" {
+		return nil, fmt.Errorf(`missing required "--%v" flag`, FlagNameKey)
+	}
+	if filename == "-" {
+		return nil, fmt.Errorf(`the "--%v" flag does not support "-" (stdin); provide a file path`, FlagNameKey)
+	}
+	key, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read key file: %v", err)
+	}
+	return key, nil
 }
 
 // Block mode encryption.
@@ -261,9 +263,12 @@ func encryptGCMAEAD(cipherName string, c cipher.Block, plaintext []byte, ciphert
 	if err != nil {
 		return fmt.Errorf("failed to initialize GCM AEAD mode: %v", err)
 	}
+	if err := rejectIVFlagsForGCM(o); err != nil {
+		return err
+	}
 	nonceSize := gcm.NonceSize()
-	// GCM generates a fresh nonce per encryption and prepends it to the
-	// ciphertext; unlike CTR mode, it ignores the --iv/--omit-iv flags.
+	// GCM generates a fresh nonce per encryption and always prepends it to
+	// the ciphertext.
 	nonce := make([]byte, nonceSize)
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return fmt.Errorf("failed to generate nonce of size %v: %v", nonceSize, err)
@@ -278,6 +283,17 @@ func encryptGCMAEAD(cipherName string, c cipher.Block, plaintext []byte, ciphert
 	}
 	if _, err := ciphertextWriter.Write(ciphertext); err != nil {
 		return fmt.Errorf("failed to write ciphertext: %v", err)
+	}
+	return nil
+}
+
+// rejectIVFlagsForGCM errors out rather than silently ignoring --iv/--omit-iv
+// in GCM mode: the nonce is always random and always prepended to the
+// ciphertext, so honoring either flag would be misleading.
+func rejectIVFlagsForGCM(o *Options) error {
+	if o.InitializationVectorFilename != "" || o.OmitInitializationVector {
+		return fmt.Errorf(`the "--%v" and "--%v" flags are not supported in %q mode: a random nonce is always generated and prepended to the ciphertext`,
+			FlagNameIV, FlagNameOmitIV, cryptoModeGCM)
 	}
 	return nil
 }
@@ -301,6 +317,9 @@ func decryptGCMAEAD(cipherName string, c cipher.Block, ciphertext []byte, plaint
 	gcm, err := cipher.NewGCM(c)
 	if err != nil {
 		return fmt.Errorf("failed to create new GCM AEAD: %v", err)
+	}
+	if err := rejectIVFlagsForGCM(o); err != nil {
+		return err
 	}
 	nonceSize := gcm.NonceSize()
 	if len(ciphertext) < nonceSize {

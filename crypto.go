@@ -287,6 +287,11 @@ func encryptGCMAEAD(cipherName string, c cipher.Block, plaintext []byte, ciphert
 	return nil
 }
 
+// TODO: support "--omit-iv" for GCM mode (stop prepending the nonce to
+// ciphertext, logging it via log.Printf like CTR mode does) plus "--iv" on
+// decrypt only (read the nonce back from a file). Keep "--iv" on encrypt
+// rejected, since a user-supplied GCM nonce risks catastrophic reuse.
+
 // rejectIVFlagsForGCM errors out rather than silently ignoring --iv/--omit-iv
 // in GCM mode: the nonce is always random and always prepended to the
 // ciphertext, so honoring either flag would be misleading.

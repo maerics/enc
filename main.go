@@ -28,6 +28,7 @@ const (
 	FlagNameKey        = "key"
 	FlagNameIV         = "iv"
 	FlagNameOmitIV     = "omit-iv"
+	FlagNamePad        = "pad"
 )
 
 type Options struct {
@@ -55,6 +56,11 @@ type Options struct {
 	AdditionalDataFilename       string
 	InitializationVectorFilename string
 	OmitInitializationVector     bool
+	Strict                       bool
+
+	PadFilename string
+	ForcePad    bool
+	DeletePad   bool
 
 	CryptoMode cryptoMode
 }
@@ -110,6 +116,7 @@ func newEncCmd(options *Options) *cobra.Command {
 	addEd25519Commands(encCmd, options)
 	addJWTCommand(encCmd, options)
 	addJWECommand(encCmd, options)
+	addOTPCommand(encCmd, options)
 
 	encCmd.Run = func(cmd *cobra.Command, args []string) {
 		if printVersion {

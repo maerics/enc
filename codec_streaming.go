@@ -67,6 +67,7 @@ func addStreamingCodecs(rootCmd *cobra.Command, options *Options) {
 			cmd.Flags().Uint8VarP(&options.Offset, "offset", "r", 13, "offset for ROT13 transcoding")
 		case "xor":
 			cmd.Flags().StringVarP(&options.Key, "key", "k", "", "key filename for xor transcoding")
+			cmd.Flags().BoolVar(&options.Strict, "strict", false, "error instead of cycling the key when input is longer than the key")
 		}
 		cmd.Flags().BoolVarP(&options.IgnoreWhitespace,
 			"ignore-whitespace", "w", options.IgnoreWhitespace,
@@ -155,7 +156,7 @@ func xorNewDecoderO(r io.Reader, o *Options) io.Reader {
 	if len(key) == 0 {
 		log.Println(`WARNING: xor with empty key has no effect, try "--key=KEY_FILENAME".`)
 	}
-	return xor.NewDecoder([]byte(key), r)
+	return xor.NewDecoder([]byte(key), r, o.Strict)
 }
 
 func xorNewEncoderO(w io.Writer, o *Options) io.Writer {
@@ -172,7 +173,7 @@ func xorNewEncoderO(w io.Writer, o *Options) io.Writer {
 	if len(key) == 0 {
 		log.Println(`WARNING: xor with empty key has no effect, try "--key=...".`)
 	}
-	return xor.NewEncoder(key, w)
+	return xor.NewEncoder(key, w, o.Strict)
 }
 
 func rot13NewDecoderO(r io.Reader, o *Options) io.Reader {

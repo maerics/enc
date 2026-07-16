@@ -36,6 +36,16 @@ content encryption `A128GCM/A192GCM/A256GCM`. Deferred for a follow-up:
   commands (see `crypto_modes.go`'s reserved-but-unimplemented `cbc` mode),
   so this would be greenfield work on two fronts at once.
 
+## otp: pre-generate a standalone pad
+
+`enc otp` currently only generates a pad as a side effect of encrypting
+(read plaintext, size the pad to match, write it to `--pad`). A standalone
+`otp generate --size N --out pad.dat` subcommand — writing N random bytes
+without encrypting anything, for cases where two parties need to exchange a
+pad out-of-band before either has plaintext to send — was considered and
+deferred to keep the initial implementation scoped to the encrypt/decrypt
+path. Would mirror `ed25519 generate`'s shape if added.
+
 ## rsa sign/verify: PSS padding
 
 `enc rsa sign`/`enc rsa verify` (`rsa_sign.go`) currently only support

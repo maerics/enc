@@ -27,6 +27,7 @@ Available Commands:
   hex         Encode input using HEX
   jwe         Encrypt input as a JWE
   jwt         Sign input claims as a JWT
+  otp         Encrypt input using a freshly generated one-time pad
   rot13       Encode input using ROT13
   rsa         Encrypt input using RSA public key
   xor         Encode input using XOR
@@ -68,6 +69,11 @@ of standard encoding.
 `xor` additionally supports:
 
 - `-k, --key string` filename containing the XOR key bytes (required)
+- `--strict` error instead of cycling the key when the input is longer than
+  the key, instead of the default repeating-key behavior. A key that's
+  reused/cycled is not a one-time pad and is not information-theoretically
+  secure; see `otp` below for a command that generates a correctly-sized
+  key (pad) automatically
 
 `base58` additionally supports:
 
@@ -87,6 +93,31 @@ of standard encoding.
   mode only; not supported in `gcm` mode)
 - `-a, --additional-data string` (aes only) additional authenticated data
   filename, used in `gcm` mode
+
+### otp, perfect
+
+`enc otp` (alias `perfect`) implements a one-time pad (Vernam cipher): it
+reads the plaintext, generates a random pad exactly as long as the
+plaintext via `crypto/rand`, writes the pad to `--pad`, and XORs. `dec otp`
+reads the pad and ciphertext and reverses the operation.
+
+- `-p, --pad string` pad file path: written on encrypt, read on decrypt
+  (required)
+- `--force` allow overwriting an existing pad file when encrypting
+  (dangerous: reusing a pad destroys one-time-pad security; refused by
+  default)
+- `--delete-pad` delete the pad file after a successful decrypt, since a
+  pad must never be reused
+
+A one-time pad is only "perfect" (information-theoretically secure) if all
+of the following hold: the pad is truly random (`crypto/rand` satisfies
+this), the pad is exactly as long as the message (`otp` enforces this),
+the pad is used exactly once and then destroyed (`--force`/`--delete-pad`
+help enforce this, but ultimately depend on caller discipline), and the
+pad is delivered to the recipient over a channel as secure as the message
+itself — `otp` generates and stores the pad locally but does not solve key
+distribution. There is also no authentication: the ciphertext is
+unauthenticated and malleable, unlike `aes`'s `gcm` mode.
 
 ### rsa
 
@@ -280,6 +311,18 @@ $ echo 'Attack!' | enc xor --key=/tmp/secret.txt | enc base64 ; echo
 # MhEXEwYfK3k=
 $ echo MhEXEwYfK3k= | enc -D base64 | enc -D xor --key=/tmp/secret.txt
 # Attack!
+
+# One-time pad (OTP) encryption — pad is generated and sized automatically.
+$ echo 'Hello, OTP! 🔐' | enc otp --pad=otp.pad | dec otp --pad=otp.pad
+# Hello, OTP! 🔐
+$ rm otp.pad   # never reuse a pad
+
+# Equivalent building block: size the pad by hand, XOR in --strict mode.
+$ echo -n 'Hello, XOR!' > msg.txt
+$ head -c "$(wc -c < msg.txt)" /dev/urandom > xor.pad
+$ enc xor --key=xor.pad --strict < msg.txt | dec xor --key=xor.pad --strict ; echo
+# Hello, XOR!
+$ rm xor.pad   # never reuse a pad
 
 # RSA encryption.
 $ enc rsa generate --private-key=priv.key --public-key=pub.key

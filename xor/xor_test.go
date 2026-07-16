@@ -22,7 +22,7 @@ var examples = []example{
 func TestEncoder(t *testing.T) {
 	for i, eg := range examples {
 		buf := &bytes.Buffer{}
-		w := NewEncoder(eg.key, buf)
+		w := NewEncoder(eg.key, buf, false)
 		if n, err := w.Write([]byte(eg.message)); err != nil || n != len(eg.message) {
 			t.Fatalf("wrote %v byte(s), err=%v", n, err)
 		}
@@ -37,7 +37,7 @@ func TestEncoder(t *testing.T) {
 func TestDecoder(t *testing.T) {
 	for i, eg := range examples {
 		buf := bytes.NewBuffer(eg.xored)
-		r := NewDecoder(eg.key, buf)
+		r := NewDecoder(eg.key, buf, false)
 		bs, err := ioutil.ReadAll(r)
 		if err != nil {
 			t.Fatal(err)
@@ -52,11 +52,62 @@ func TestDecoder(t *testing.T) {
 func TestEmptyKey(t *testing.T) {
 	message := []byte("unchanged")
 	buf := &bytes.Buffer{}
-	w := NewEncoder(nil, buf)
+	w := NewEncoder(nil, buf, false)
 	if _, err := w.Write(message); err != nil {
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(buf.Bytes(), message) {
 		t.Errorf("empty key should leave message unchanged, wanted %q, got %q", message, buf.Bytes())
+	}
+}
+
+func TestNonStrictCyclesShortKey(t *testing.T) {
+	eg := examples[1] // key="key" (3 bytes), message is longer than the key.
+	buf := &bytes.Buffer{}
+	w := NewEncoder(eg.key, buf, false)
+	if _, err := w.Write([]byte(eg.message)); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(buf.Bytes(), eg.xored) {
+		t.Errorf("non-strict should cycle the key, wanted %x, got %x", eg.xored, buf.Bytes())
+	}
+}
+
+func TestStrictRejectsShortKeyOnEncode(t *testing.T) {
+	eg := examples[1] // key="key" (3 bytes), message is longer than the key.
+	buf := &bytes.Buffer{}
+	w := NewEncoder(eg.key, buf, true)
+	if _, err := w.Write([]byte(eg.message)); err == nil {
+		t.Fatal("expected an error when the key is shorter than the message in strict mode, got nil")
+	}
+}
+
+func TestStrictRejectsShortKeyOnDecode(t *testing.T) {
+	eg := examples[1] // key="key" (3 bytes), ciphertext is longer than the key.
+	buf := bytes.NewBuffer(eg.xored)
+	r := NewDecoder(eg.key, buf, true)
+	if _, err := ioutil.ReadAll(r); err == nil {
+		t.Fatal("expected an error when the key is shorter than the ciphertext in strict mode, got nil")
+	}
+}
+
+func TestStrictAllowsExactLengthKey(t *testing.T) {
+	key := []byte("exactlen")
+	message := []byte("exactlen") // same length as key
+	buf := &bytes.Buffer{}
+	w := NewEncoder(key, buf, true)
+	// Write mutates its argument in place, so pass a copy to keep the
+	// original "message" intact for comparison below.
+	if _, err := w.Write(append([]byte(nil), message...)); err != nil {
+		t.Fatalf("expected no error when the key length matches the message length, got %v", err)
+	}
+
+	r := NewDecoder(key, bytes.NewBuffer(buf.Bytes()), true)
+	bs, err := ioutil.ReadAll(r)
+	if err != nil {
+		t.Fatalf("expected no error when the key length matches the ciphertext length, got %v", err)
+	}
+	if !reflect.DeepEqual(bs, message) {
+		t.Errorf("wanted %q, got %q", message, bs)
 	}
 }

@@ -1,9 +1,3 @@
----
-type: index
-title: Commands
-description: One concept doc per command family exposed by the enc/dec binary
----
-
 # Commands
 
 - [codecs.md](./codecs.md) — ascii85, base32, base58, base64, hex, rot13, xor

@@ -53,3 +53,47 @@ PKCS1v15 padding. RSA-PSS (`rsa.SignPSS`/`rsa.VerifyPSS`) is deferred; when
 implemented, it should share the padding-mode choice with the PS256/384/512
 item above (e.g. a common `--pss` flag or padding-mode convention) so the
 two features don't diverge on RSA signing semantics.
+
+## x509: certificate command
+
+There is no `enc x509` command yet. A full-fledged version, following the
+subcommand shape of `ed25519.go`/`rsa.go` (`addGenerateCmd` etc.), was
+considered:
+
+- **generate** — self-signed cert from a fresh or existing keypair
+  (`x509.CreateCertificate`), mirroring `ed25519 generate`'s flags.
+- **csr** — create a PKCS#10 certificate signing request
+  (`x509.CreateCertificateRequest`).
+- **sign** — issue a leaf cert by signing a CSR with a separate CA cert/key
+  (`x509.CreateCertificate` with a parent), so the command can act as a
+  minimal CA, not just self-signed/inspect.
+- **dump** — parse and pretty-print a cert or CSR (subject, issuer, SANs,
+  validity, key usage), following `jwt_dump.go`'s parse-and-print pattern.
+
+RSA and Ed25519 keys (`rsa.go`, `ed25519.go`) are the key-type precedents to
+reuse rather than duplicating key generation logic.
+
+## jwt: JWK/JWKS support
+
+`enc jwt` has no JWK (RFC 7517) support. Deferred ideas:
+
+- A `jwk` subcommand (or flag) to export an existing RSA/Ed25519 public key
+  (from `rsa.go`/`ed25519.go`) as a JWK, and a JWKS (key set) wrapper.
+- `jwt verify --jwks <file>` — verify against a **local** JWKS file (no HTTP
+  fetch — the tool has no network calls today and adding one would be a
+  real design departure, not something to bake in here), selecting the key
+  by `kid`.
+- `x5c` header support — embed/verify a cert chain in the JWT header,
+  linking to the `x509` command above (`x509 dump`'s parsing).
+
+## oidc: ID token validation
+
+Scoped narrowly to validating an OIDC ID token (a JWT) against a local
+JWKS/issuer public key — signature check via the JWKS work above, plus
+OIDC-specific claim checks (`iss`, `aud`, `exp`, `iat`, optional `nonce`)
+layered on top of `jwt verify`/`jwt_dump.go`.
+
+Full OAuth flows (authorization code grant, token endpoint exchange, browser
+redirect handling) were considered and rejected as out of scope — they
+require a running server/browser interaction and don't fit the tool's
+single-shot pipe model (economy of mechanism).

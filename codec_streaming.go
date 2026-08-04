@@ -1,6 +1,7 @@
 package main
 
 import (
+	"enc/binary"
 	"enc/rot13"
 	"enc/xor"
 	"encoding/ascii85"
@@ -33,6 +34,9 @@ var streamingCodecs = []StreamingCodec{
 	{"base64", nil,
 		func(r io.Reader, o *Options) io.Reader { return base64.NewDecoder(base64.StdEncoding, wsiro(r, o)) },
 		func(w io.Writer, o *Options) io.WriteCloser { return base64.NewEncoder(base64.StdEncoding, w) }},
+	{"binary", []string{"bin"},
+		func(r io.Reader, o *Options) io.Reader { return binary.NewDecoder(wsiro(r, o)) },
+		func(w io.Writer, o *Options) io.WriteCloser { return binary.NewEncoder(w, false) }},
 	{"hex", nil,
 		func(r io.Reader, o *Options) io.Reader { return hex.NewDecoder(wsiro(r, o)) },
 		func(w io.Writer, o *Options) io.WriteCloser { return wnc(hex.NewEncoder(w)) }},
@@ -54,6 +58,7 @@ func addStreamingCodecs(rootCmd *cobra.Command, options *Options) {
 
 		var base64UrlEncoding bool
 		padChar, noPad := "=", false
+		var binaryPretty bool
 
 		switch codec.Name {
 		case "base64":
@@ -63,6 +68,9 @@ func addStreamingCodecs(rootCmd *cobra.Command, options *Options) {
 		case "base32":
 			cmd.Flags().StringVar(&padChar, "pad", padChar, "padding character")
 			cmd.Flags().BoolVar(&noPad, "no-pad", false, "disable padding")
+		case "binary":
+			cmd.Flags().BoolVarP(&binaryPretty, "pretty", "p", false,
+				fmt.Sprintf("group octets with spaces and wrap every %v octets (encode only)", binary.OctetsPerLine))
 		case "rot13":
 			cmd.Flags().Uint8VarP(&options.Offset, "offset", "r", 13, "offset for ROT13 transcoding")
 		case "xor":
@@ -98,6 +106,8 @@ func addStreamingCodecs(rootCmd *cobra.Command, options *Options) {
 				enc := base32.StdEncoding.WithPadding(pad)
 				codec.Decoder = func(r io.Reader, o *Options) io.Reader { return base32.NewDecoder(enc, wsiro(r, o)) }
 				codec.Encoder = func(w io.Writer, o *Options) io.WriteCloser { return base32.NewEncoder(enc, w) }
+			case "binary":
+				codec.Encoder = func(w io.Writer, o *Options) io.WriteCloser { return binary.NewEncoder(w, binaryPretty) }
 			}
 			transcodeStreaming(c, codec, options)
 		}

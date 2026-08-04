@@ -20,6 +20,7 @@ Available Commands:
   base32      Encode input using BASE32
   base58      Encode input using BASE58
   base64      Encode input using BASE64
+  binary      Encode input using BINARY
   des         Encrypt input using DES
   des3        Encrypt input using 3DES
   ed25519     Generate, sign, and verify using Ed25519 keys
@@ -47,7 +48,7 @@ Use "enc [command] --help" for more information about a command.
 
 ## Commands
 
-### Codecs (ascii85, base32, base58, base64, hex, rot13, xor)
+### Codecs (ascii85, base32, base58, base64, binary, hex, rot13, xor)
 
 Every codec subcommand supports:
 
@@ -79,6 +80,14 @@ of standard encoding.
 
 - `--check string` version byte `[0-255]`, decimal or `0x`-prefixed hex; uses
   base58check encoding instead of plain base58
+
+`binary` (alias `bin`) encodes each byte as eight ASCII `0`/`1` characters
+(MSB first); decoding errors if the input bit count is not a multiple of 8
+(an incomplete octet). Additionally supports:
+
+- `-p, --pretty` group octets with spaces and wrap every 6 octets, like
+  `xxd -b` (encode only), always ending in a trailing newline; pretty output
+  decodes fine with `-w`
 
 ### aes, des, des3 (aliases: `3des`, `tripledes`, `triple-des`)
 
@@ -303,7 +312,12 @@ requiring a key:
 $ echo OK | enc hex ; echo
 # 4f4b0a
 $ echo 4f4b0a | enc -D hex -w
+$ echo -n OK | enc binary
+# 0100111101001011
+$ echo 0100111101001011 | enc -D binary -w
 # OK
+$ echo -n 'Hi!' | enc binary --pretty
+# 01001000 01101001 00100001
 $ echo QEB NRFZH YOLTK CLU GRJMP LSBO QEB IXWV ALD | enc caesar -r3
 # THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG
 $ echo 'secret' > /tmp/secret.txt

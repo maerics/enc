@@ -1,6 +1,7 @@
 # Commands
 
-- [codecs.md](./codecs.md) — ascii85, base32, base58, base64, hex, rot13, xor
+- [codecs.md](./codecs.md) — ascii85, base32, base58, base64, binary, hex,
+  rot13, xor
 - [symmetric-crypto.md](./symmetric-crypto.md) — aes, des, des3
 - [otp.md](./otp.md) — otp / perfect (one-time pad)
 - [rsa.md](./rsa.md) — rsa generate/extract/sign/verify

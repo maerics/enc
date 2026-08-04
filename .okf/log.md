@@ -1,5 +1,14 @@
 # Log
 
+## 2026-08-03
+
+**Update** — `commands/codecs.md`: documented the new `binary` (alias
+`bin`) streaming codec (`binary/binary.go`) — ASCII `0`/`1` octet
+encoding, `-w`-respecting decode with incomplete-octet and
+invalid-character errors, and the `-p/--pretty` flag (`xxd -b`-style
+grouping/wrapping with a trailing newline). Updated `commands/index.md`'s
+codec list to match.
+
 ## 2026-07-16
 
 **Initialization** — bootstrapped bundle from repo source (main.go, crypto.go,

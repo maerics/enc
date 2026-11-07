@@ -128,6 +128,19 @@ itself — `otp` generates and stores the pad locally but does not solve key
 distribution. There is also no authentication: the ciphertext is
 unauthenticated and malleable, unlike `aes`'s `gcm` mode.
 
+#### otp generate (alias: gen)
+
+`enc otp generate` writes N `crypto/rand` bytes as a standalone pad, with no
+plaintext involved, so two parties can exchange a pad out-of-band before
+either has a message. Decrypt requires the pad to be exactly as long as the
+ciphertext, so N must equal the eventual message length. Encrypt with
+`enc xor --strict --key=PAD` (byte-identical to `otp`'s XOR), since
+`enc otp` always creates a fresh pad.
+
+- `--size int` pad size in bytes; plain byte count, must be > 0 (required)
+- `--out string` pad file path, default `-` (stdout). A file is created with
+  mode `0600` and is never overwritten
+
 ### rsa
 
 - `--private-key string` private key filename
@@ -330,6 +343,13 @@ $ echo MhEXEwYfK3k= | enc -D base64 | enc -D xor --key=/tmp/secret.txt
 $ echo 'Hello, OTP! 🔐' | enc otp --pad=otp.pad | dec otp --pad=otp.pad
 # Hello, OTP! 🔐
 $ rm otp.pad   # never reuse a pad
+
+# Pre-shared pad: generate before any plaintext exists, share it securely.
+$ echo -n 'Meet at dawn' > msg.txt
+$ enc otp generate --size $(wc -c < msg.txt) --out otp.pad      # unquoted: BSD wc pads with spaces
+$ enc xor --strict --key=otp.pad < msg.txt > msg.enc            # sender
+$ dec otp --pad=otp.pad --delete-pad < msg.enc ; echo           # recipient
+# Meet at dawn
 
 # Equivalent building block: size the pad by hand, XOR in --strict mode.
 $ echo -n 'Hello, XOR!' > msg.txt

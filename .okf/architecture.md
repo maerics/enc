@@ -36,7 +36,7 @@ this is a deliberate design choice, not an oversight.
 - `addEd25519Commands` (`ed25519.go`) — ed25519 (+ generate/extract/sign/verify)
 - `addJWTCommand` (`jwt.go`)
 - `addJWECommand` (`jwe.go`)
-- `addOTPCommand` (`otp.go`) — otp (alias `perfect`)
+- `addOTPCommand` (`otp.go`) — otp (alias `perfect`; + generate)
 
 The streaming/buffered split is an implementation detail of each codec's
 underlying Go package, not a user-facing distinction — see

@@ -36,15 +36,13 @@ content encryption `A128GCM/A192GCM/A256GCM`. Deferred for a follow-up:
   commands (see `crypto_modes.go`'s reserved-but-unimplemented `cbc` mode),
   so this would be greenfield work on two fronts at once.
 
-## otp: pre-generate a standalone pad
+## otp generate: `-o` vs `--out` overlap
 
-`enc otp` currently only generates a pad as a side effect of encrypting
-(read plaintext, size the pad to match, write it to `--pad`). A standalone
-`otp generate --size N --out pad.dat` subcommand — writing N random bytes
-without encrypting anything, for cases where two parties need to exchange a
-pad out-of-band before either has plaintext to send — was considered and
-deferred to keep the initial implementation scoped to the encrypt/decrypt
-path. Would mirror `ed25519 generate`'s shape if added.
+`enc otp generate` has its own `--out` flag, but the global `-o/--output-file`
+(applied in `PersistentPreRunE`) still takes effect. `otp generate -o f` writes
+the pad to `f`, while `-o f --out g` writes it to `g` and leaves an empty `f`
+behind. Resolve it one way: drop `--out` in favor of the global `-o` (which
+would need the O_EXCL/0600 pad semantics), or reject `-o` when `--out` is set.
 
 ## rsa sign/verify: PSS padding
 

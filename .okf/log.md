@@ -1,5 +1,13 @@
 # Log
 
+## 2026-11-06
+
+**Update** — `commands/otp.md`: documented the new `otp generate` (alias
+`gen`) subcommand (standalone `crypto/rand` pad, `--size`/`--out`,
+refuses overwrite, mode 0600) and the `enc xor --strict` + `dec otp`
+pre-shared-pad flow. Removed the otp item from `known-gaps.md` and noted
+the subcommand in `architecture.md`.
+
 ## 2026-08-03
 
 **Update** — `commands/codecs.md`: documented the new `binary` (alias

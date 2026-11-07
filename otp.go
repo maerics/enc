@@ -35,7 +35,55 @@ func addOTPCommand(rootCmd *cobra.Command, o *Options) {
 	cmd.Flags().BoolVar(&o.DeletePad, "delete-pad", false,
 		"delete the pad file after a successful decrypt (reuse destroys one-time-pad security)")
 
+	addOTPGenerateCmd(cmd)
 	rootCmd.AddCommand(cmd)
+}
+
+func addOTPGenerateCmd(otpCmd *cobra.Command) {
+	var size int64
+	var out string
+
+	generateCmd := &cobra.Command{
+		Use:     "generate",
+		Aliases: []string{"gen"},
+		Short:   "Generate a standalone one-time pad of N random bytes",
+		Args:    cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if size <= 0 {
+				return fmt.Errorf(`missing or invalid "--size" flag: must be > 0`)
+			}
+			if isStd(out) {
+				if _, err := io.CopyN(cmd.OutOrStdout(), rand.Reader, size); err != nil {
+					return fmt.Errorf("failed to write pad: %v", err)
+				}
+				return nil
+			}
+			return writePadFile(out, size)
+		},
+	}
+
+	generateCmd.Flags().Int64Var(&size, "size", 0,
+		"pad size in bytes; must equal the eventual message length (required)")
+	generateCmd.Flags().StringVar(&out, "out", DefaultStreamName,
+		`pad file path (refuses to overwrite) or "-" for stdout`)
+
+	otpCmd.AddCommand(generateCmd)
+}
+
+func writePadFile(filename string, size int64) error {
+	f, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+	if err != nil {
+		return fmt.Errorf("failed to open pad file %q for writing: %v", filename, err)
+	}
+	_, err = io.CopyN(f, rand.Reader, size)
+	if cerr := f.Close(); err == nil {
+		err = cerr
+	}
+	if err != nil {
+		os.Remove(filename)
+		return fmt.Errorf("failed to write pad file %q: %v", filename, err)
+	}
+	return nil
 }
 
 func otpEncrypt(cmd *cobra.Command, o *Options) error {

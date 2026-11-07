@@ -114,6 +114,31 @@ func TestOTPGenerateRefusesOverwrite(t *testing.T) {
 	}
 }
 
+func TestOTPGenerateOutputFlags(t *testing.T) {
+	dir := t.TempDir()
+	globalOut, padOut := path.Join(dir, "global.pad"), path.Join(dir, "out.pad")
+	_, err := runOTPGenerate(t, "--size", "8", "-o", globalOut, "--out", padOut)
+	if err == nil || !strings.Contains(err.Error(), "mutually exclusive") {
+		t.Fatalf("expected a conflict error, got %v", err)
+	}
+	for _, f := range []string{globalOut, padOut} {
+		if _, err := os.Stat(f); !os.IsNotExist(err) {
+			t.Fatalf("%v should not exist, stat err=%v", f, err)
+		}
+	}
+
+	if _, err := runOTPGenerate(t, "--size", "8", "-o", globalOut); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	info, err := os.Stat(globalOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Size() != 8 || info.Mode().Perm() != 0600 {
+		t.Fatalf("got size=%v mode=%o, wanted 8 and 0600", info.Size(), info.Mode().Perm())
+	}
+}
+
 func TestOTPGenerateDecryptCompat(t *testing.T) {
 	for _, deletePad := range []bool{false, true} {
 		message := []byte("pre-shared pad message")

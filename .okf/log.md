@@ -6,7 +6,8 @@
 `gen`) subcommand (standalone `crypto/rand` pad, `--size`/`--out`,
 refuses overwrite, mode 0600) and the `enc xor --strict` + `dec otp`
 pre-shared-pad flow. Removed the otp item from `known-gaps.md` and noted
-the subcommand in `architecture.md`.
+the subcommand in `architecture.md`. `--out` and the global `-o` are
+mutually exclusive.
 
 ## 2026-08-03
 

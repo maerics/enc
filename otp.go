@@ -48,6 +48,14 @@ func addOTPGenerateCmd(otpCmd *cobra.Command) {
 		Aliases: []string{"gen"},
 		Short:   "Generate a standalone one-time pad of N random bytes",
 		Args:    cobra.NoArgs,
+		// Overrides the root hook (cobra runs only the nearest one) so the
+		// conflict is rejected before the global -o file gets created.
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if cmd.Flags().Changed("out") && cmd.Flags().Changed("output-file") {
+				return fmt.Errorf(`the "--out" and "--output-file" flags are mutually exclusive`)
+			}
+			return cmd.Root().PersistentPreRunE(cmd, args)
+		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if size <= 0 {
 				return fmt.Errorf(`missing or invalid "--size" flag: must be > 0`)

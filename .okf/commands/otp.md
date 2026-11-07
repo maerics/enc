@@ -45,7 +45,8 @@ Works under both `enc` and `dec` (`--decrypt` is ignored). Parent flags
 - `--size int` required, plain byte count, > 0; must equal the eventual
   message length because decrypt enforces pad length == ciphertext length
 - `--out string` default `-` (stdout); a file is opened `O_EXCL` with mode
-  `0600` (never overwritten, no `--force`) and removed if writing fails
+  `0600` (never overwritten, no `--force`) and removed if writing fails;
+  mutually exclusive with the global `-o/--output-file` (same semantics)
 - Streams via `io.CopyN`, so memory stays flat for large N
 
 The sender encrypts with `enc xor --strict --key=PAD` (byte-identical to

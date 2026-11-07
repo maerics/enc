@@ -36,14 +36,6 @@ content encryption `A128GCM/A192GCM/A256GCM`. Deferred for a follow-up:
   commands (see `crypto_modes.go`'s reserved-but-unimplemented `cbc` mode),
   so this would be greenfield work on two fronts at once.
 
-## otp generate: `-o` vs `--out` overlap
-
-`enc otp generate` has its own `--out` flag, but the global `-o/--output-file`
-(applied in `PersistentPreRunE`) still takes effect. `otp generate -o f` writes
-the pad to `f`, while `-o f --out g` writes it to `g` and leaves an empty `f`
-behind. Resolve it one way: drop `--out` in favor of the global `-o` (which
-would need the O_EXCL/0600 pad semantics), or reject `-o` when `--out` is set.
-
 ## rsa sign/verify: PSS padding
 
 `enc rsa sign`/`enc rsa verify` (`rsa_sign.go`) currently only support

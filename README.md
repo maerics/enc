@@ -139,7 +139,8 @@ ciphertext, so N must equal the eventual message length. Encrypt with
 
 - `--size int` pad size in bytes; plain byte count, must be > 0 (required)
 - `--out string` pad file path, default `-` (stdout). A file is created with
-  mode `0600` and is never overwritten
+  mode `0600` and is never overwritten. Mutually exclusive with the global
+  `-o/--output-file`, which behaves the same way
 
 ### rsa
 
